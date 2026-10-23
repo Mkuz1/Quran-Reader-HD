@@ -2,8 +2,12 @@
 
 Quran Reader HD: the Madani mushaf with verse-by-verse recitation, translations, tafsir, notes, bookmarks and search, in English, French and Arabic — now for **macOS, Windows and Android**.
 
+### Fixed in 1.2.2
+- **Android and Windows**: mushaf pages showed as a plain grey box. Drawing the name of Allah in red failed once its word positions had downloaded, so the page didn't appear at all. Every release is now also tested on an Android emulator before it's published.
+- **Small phones**: the opening page's gold ornaments no longer overflow.
+
 ### Fixed in 1.2.1
-- **Android**: mushaf pages showed as a plain grey block on some phones. Pages are now decoded at the size they're shown and drawn sharply.
+- **Phones**: pages are decoded at the size they're shown, which uses less memory.
 - **Phones**: the top bar keeps room for the surah name (page, juz' and hizb are underneath); reading mode and settings moved into the ⋮ menu.
 - **Phones**: the recitation options fit the screen, with each label above its choice.
 

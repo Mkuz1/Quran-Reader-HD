@@ -11,7 +11,9 @@ import 'package:quran_reader_hd/core/l10n.dart';
 import 'package:quran_reader_hd/core/quran.dart';
 import 'package:quran_reader_hd/core/storage.dart';
 import 'package:quran_reader_hd/data/meta.dart';
+import 'package:quran_reader_hd/data/page_words.dart';
 import 'package:quran_reader_hd/main.dart';
+import 'package:quran_reader_hd/ui/dedication.dart';
 import 'package:quran_reader_hd/ui/dock.dart';
 import 'package:quran_reader_hd/ui/home.dart';
 import 'package:quran_reader_hd/ui/page_widget.dart';
@@ -65,6 +67,8 @@ void main() {
     tester.platformDispatcher.platformBrightnessTestValue = dark ? Brightness.dark : Brightness.light;
     addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
     model = AppModel(prefs)..showDedication = false;
+    // Words to colour red, as downloaded from quran.com on a device: the name of Allah in 1:1.
+    model.words.allahWords[1] = {const WordRef(AyahKey(1, 1), 2)};
     // Offline there is no surah list; a short one with real names where the layout depends on them.
     if (meta) {
       model.meta = QuranMeta([
@@ -132,6 +136,16 @@ void main() {
     await finish(tester);
   });
 
+
+  testWidgets('opening page on a small phone', (tester) async {
+    await pumpHome(tester, const Size(320, 640));
+    model.showDedication = true;
+    model.update(() {});
+    await tester.pump();
+    expect(find.byType(DedicationView), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await finish(tester);
+  });
 
   testWidgets('unfolded foldable with a hinge', (tester) async {
     await pumpHome(tester, const Size(1080, 960), features: const [
