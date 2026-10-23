@@ -1,0 +1,230 @@
+import Foundation
+import Observation
+import SwiftUI
+
+enum AppLanguage: String, CaseIterable, Identifiable {
+    case english = "en", french = "fr", arabic = "ar"
+    var id: String { rawValue }
+    /// Each language names itself, so the toggle is readable whatever is selected.
+    var nativeName: String {
+        switch self {
+        case .english: "English"
+        case .french: "Français"
+        case .arabic: "العربية"
+        }
+    }
+    var layoutDirection: LayoutDirection { self == .arabic ? .rightToLeft : .leftToRight }
+}
+
+/// App-wide UI language. Views that call `tr` read `language`, so switching re-renders them.
+@Observable
+final class Localizer {
+    static let shared = Localizer()
+
+    var language: AppLanguage = AppLanguage(rawValue: UserDefaults.standard.string(forKey: "language") ?? "")
+        ?? AppLanguage(rawValue: Locale.current.language.languageCode?.identifier ?? "") ?? .english {
+        didSet { UserDefaults.standard.set(language.rawValue, forKey: "language") }
+    }
+}
+
+/// Translates an English UI string; unknown strings fall back to English.
+func tr(_ english: String) -> String {
+    switch Localizer.shared.language {
+    case .english: english
+    case .french: Strings.table[english]?.fr ?? english
+    case .arabic: Strings.table[english]?.ar ?? english
+    }
+}
+
+/// Translates a format string (keys use %@ / %d) and fills it in.
+func tr(_ format: String, _ args: CVarArg...) -> String {
+    String(format: tr(format), arguments: args)
+}
+
+private enum Strings {
+    static let table: [String: (fr: String, ar: String)] = [
+        // Reading modes, tabs, themes
+        "Mushaf": ("Mushaf", "المصحف"),
+        "Translation & Tafsir": ("Traduction et tafsir", "الترجمة والتفسير"),
+        "Translation": ("Traduction", "الترجمة"),
+        "Tafsir": ("Tafsir", "التفسير"),
+        "Note": ("Note", "ملاحظة"),
+        "Notes": ("Notes", "الملاحظات"),
+        "Surahs": ("Sourates", "السور"),
+        "Juz": ("Juz", "الأجزاء"),
+        "Search": ("Recherche", "بحث"),
+        "Marks": ("Signets", "العلامات"),
+        "Page": ("Page", "الصفحة"),
+        "Date": ("Date", "التاريخ"),
+        "Classic": ("Classique", "كلاسيكي"),
+        "Coloured": ("Couleur", "ملوّن"),
+        "Night": ("Nuit", "ليلي"),
+        "Arabic": ("Arabe", "العربية"),
+        "Both": ("Les deux", "كلاهما"),
+        "Language": ("Langue", "اللغة"),
+
+        // Toolbar, navigation, menus
+        "Next page": ("Page suivante", "الصفحة التالية"),
+        "Previous page": ("Page précédente", "الصفحة السابقة"),
+        "Next Page": ("Page suivante", "الصفحة التالية"),
+        "Previous Page": ("Page précédente", "الصفحة السابقة"),
+        "Go to page (1–604)": ("Aller à la page (1–604)", "انتقل إلى الصفحة (١–٦٠٤)"),
+        "Mode": ("Mode", "الوضع"),
+        "Reading Mode": ("Mode de lecture", "وضع القراءة"),
+        "Two-page spread": ("Double page", "صفحتان متقابلتان"),
+        "Two-Page Spread": ("Double page", "صفحتان متقابلتان"),
+        "Bookmark this page": ("Marquer cette page", "ضع علامة على هذه الصفحة"),
+        "Bookmark This Page": ("Marquer cette page", "ضع علامة على هذه الصفحة"),
+        "Remove Bookmark": ("Retirer le signet", "إزالة العلامة"),
+        "Translation, tafsir and notes": ("Traduction, tafsir et notes", "الترجمة والتفسير والملاحظات"),
+        "Page appearance": ("Apparence des pages", "مظهر الصفحات"),
+        "Pages": ("Pages", "الصفحات"),
+        "Brightness": ("Luminosité", "السطوع"),
+        "Swipe to turn pages": ("Balayer pour tourner les pages", "اسحب لقلب الصفحات"),
+        "Swipe to Turn Pages": ("Balayer pour tourner les pages", "اسحب لقلب الصفحات"),
+        "Page Theme": ("Thème des pages", "نمط الصفحات"),
+        "Navigate": ("Navigation", "التنقل"),
+        "Recitation": ("Récitation", "التلاوة"),
+        "Mushaf Help": ("Aide de Mushaf", "مساعدة المصحف"),
+        "About This Sadaqa Jariyah": ("À propos de cette sadaqa jariya", "عن هذه الصدقة الجارية"),
+        "Export Notes & Bookmarks as HTML…": ("Exporter notes et signets en HTML…", "تصدير الملاحظات والعلامات بصيغة HTML…"),
+        "Export Notes & Bookmarks as JSON…": ("Exporter notes et signets en JSON…", "تصدير الملاحظات والعلامات بصيغة JSON…"),
+        "Email Notes & Bookmarks…": ("Envoyer notes et signets par e-mail…", "إرسال الملاحظات والعلامات بالبريد…"),
+        "Import Notes & Bookmarks…": ("Importer notes et signets…", "استيراد الملاحظات والعلامات…"),
+        "Download All Pages for Offline Reading": ("Télécharger toutes les pages (hors ligne)", "تنزيل كل الصفحات للقراءة دون اتصال"),
+        "Downloading pages for offline use…": ("Téléchargement des pages…", "جارٍ تنزيل الصفحات…"),
+        "There are no notes or bookmarks to export": ("Aucune note ni signet à exporter", "لا توجد ملاحظات أو علامات للتصدير"),
+
+        // Status
+        "Preparing…": ("Préparation…", "جارٍ التحضير…"),
+        "Downloading ayah coordinates…": ("Téléchargement des positions des versets…", "جارٍ تنزيل مواضع الآيات…"),
+        "Couldn't load the mushaf": ("Impossible de charger le mushaf", "تعذّر تحميل المصحف"),
+        "Try Again": ("Réessayer", "أعد المحاولة"),
+        "Retry": ("Réessayer", "أعد المحاولة"),
+        "Loading surah list…": ("Chargement des sourates…", "جارٍ تحميل السور…"),
+        "Loading index…": ("Chargement de l'index…", "جارٍ تحميل الفهرس…"),
+        "Downloading %@…": ("Téléchargement : %@…", "جارٍ تنزيل %@…"),
+
+        // Ayah menu
+        "Play From Here": ("Lire à partir d'ici", "التلاوة من هنا"),
+        "Play This Ayah Only": ("Lire ce verset seulement", "تلاوة هذه الآية فقط"),
+        "Memorisation Range": ("Plage de mémorisation", "نطاق الحفظ"),
+        "Set as Range Start": ("Définir comme début", "تعيين كبداية النطاق"),
+        "Set as Range End": ("Définir comme fin", "تعيين كنهاية النطاق"),
+        "Play Range": ("Lire la plage", "تلاوة النطاق"),
+        "Add Note…": ("Ajouter une note…", "إضافة ملاحظة…"),
+        "Edit Note…": ("Modifier la note…", "تعديل الملاحظة…"),
+        "Copy Arabic Text": ("Copier le texte arabe", "نسخ النص العربي"),
+        "Copy Arabic text": ("Copier le texte arabe", "نسخ النص العربي"),
+        "Copy with Translation": ("Copier avec la traduction", "نسخ مع الترجمة"),
+        "Share…": ("Partager…", "مشاركة…"),
+        "Share this ayah": ("Partager ce verset", "مشاركة هذه الآية"),
+        "Remove Page Bookmark": ("Retirer le signet de la page", "إزالة علامة الصفحة"),
+        "Bookmark Page %d": ("Marquer la page %d", "ضع علامة على الصفحة %d"),
+        "%@ — Ayah %d": ("%@ — Verset %d", "%@ — الآية %d"),
+
+        // Audio
+        "Play": ("Lecture", "تشغيل"),
+        "Pause": ("Pause", "إيقاف مؤقت"),
+        "Stop": ("Arrêt", "إيقاف"),
+        "Next ayah": ("Verset suivant", "الآية التالية"),
+        "Previous ayah": ("Verset précédent", "الآية السابقة"),
+        "Next Ayah": ("Verset suivant", "الآية التالية"),
+        "Previous Ayah": ("Verset précédent", "الآية السابقة"),
+        "Double-click an ayah to recite": ("Double-cliquez sur un verset pour l'écouter", "انقر مرتين على آية لتلاوتها"),
+        "Reciter": ("Récitateur", "القارئ"),
+        "Reciter, scope and repeat": ("Récitateur, étendue et répétition", "القارئ والنطاق والتكرار"),
+        "This ayah": ("Ce verset", "هذه الآية"),
+        "To end of surah": ("Jusqu'à la fin de la sourate", "حتى نهاية السورة"),
+        "Continue through Quran": ("Continuer dans le Coran", "متابعة في القرآن"),
+        "Repeat each ayah": ("Répéter chaque verset", "تكرار كل آية"),
+        "Repeat selection": ("Répéter la sélection", "تكرار التحديد"),
+        "Once": ("Une fois", "مرة"),
+        "Play To — choose a stopping point": ("Lire jusqu'à — choisir un point d'arrêt", "التلاوة إلى — اختر نقطة التوقف"),
+        "From": ("De", "من"),
+        "To": ("À", "إلى"),
+        "Play Selection": ("Lire la sélection", "تلاوة التحديد"),
+        "Play the memorisation range": ("Lire la plage de mémorisation", "تلاوة نطاق الحفظ"),
+        "Range %@–%@": ("Plage %@–%@", "النطاق %@–%@"),
+        "Ayah %d": ("Verset %d", "الآية %d"),
+        "Recite this ayah": ("Réciter ce verset", "تلاوة هذه الآية"),
+
+        // Inspector & study mode
+        "No Ayah Selected": ("Aucun verset sélectionné", "لم تُحدَّد آية"),
+        "Click an ayah on the page to see its translation, tafsir and your notes.":
+            ("Cliquez sur un verset pour voir sa traduction, son tafsir et vos notes.",
+             "انقر على آية في الصفحة لعرض ترجمتها وتفسيرها وملاحظاتك."),
+        "Source": ("Source", "المصدر"),
+        "Show": ("Afficher", "عرض"),
+        "Saved %@": ("Enregistré %@", "حُفظت %@"),
+        "No French tafsir is openly available yet; choose an English or Arabic tafsir.":
+            ("Aucun tafsir en français n'est disponible librement pour l'instant ; choisissez un tafsir en anglais ou en arabe.",
+             "لا يتوفر تفسير بالفرنسية بشكل مفتوح حاليًا؛ اختر تفسيرًا بالإنجليزية أو العربية."),
+        "Commentary for ayahs %@ is under %@.": ("Le commentaire des versets %@ se trouve sous %@.", "تفسير الآيات %@ مذكور عند الآية %@."),
+        "Makki": ("Mecquoise", "مكية"),
+        "Madani": ("Médinoise", "مدنية"),
+        "%d verses": ("%d versets", "%d آية"),
+
+        // Sidebar
+        "Surah name or number": ("Nom ou numéro de sourate", "اسم السورة أو رقمها"),
+        "Arabic or translation text": ("Texte arabe ou traduction", "نص عربي أو ترجمة"),
+        "Search the Arabic text (without needing diacritics) or the %@ translation.":
+            ("Cherchez dans le texte arabe (sans voyelles) ou la traduction %@.",
+             "ابحث في النص العربي (دون الحاجة إلى التشكيل) أو في ترجمة %@."),
+        "Searching…": ("Recherche…", "جارٍ البحث…"),
+        "No results": ("Aucun résultat", "لا نتائج"),
+        "%@ results": ("%@ résultats", "%@ نتيجة"),
+        "Show more results…": ("Plus de résultats…", "عرض المزيد من النتائج…"),
+        "Tap the tassel at the top of a page to bookmark it.": ("Touchez le ruban en haut d'une page pour la marquer.", "انقر الشريط أعلى الصفحة لوضع علامة عليها."),
+        "Sort by": ("Trier par", "ترتيب حسب"),
+        "Rename…": ("Renommer…", "إعادة تسمية…"),
+        "Rename Bookmark": ("Renommer le signet", "إعادة تسمية العلامة"),
+        "Title": ("Titre", "العنوان"),
+        "Save": ("Enregistrer", "حفظ"),
+        "Cancel": ("Annuler", "إلغاء"),
+        "Right-click an ayah and choose Add Note.": ("Clic droit sur un verset, puis « Ajouter une note ».", "انقر بزر الفأرة الأيمن على آية واختر «إضافة ملاحظة»."),
+        "Delete Note": ("Supprimer la note", "حذف الملاحظة"),
+        "Page %d": ("Page %d", "الصفحة %d"),
+        "Juz' %d": ("Juz' %d", "الجزء %d"),
+        "Hizb %d": ("Hizb %d", "الحزب %d"),
+        "¼ Hizb %d": ("¼ Hizb %d", "ربع الحزب %d"),
+        "½ Hizb %d": ("½ Hizb %d", "نصف الحزب %d"),
+        "¾ Hizb %d": ("¾ Hizb %d", "ثلاثة أرباع الحزب %d"),
+        "Remove bookmark": ("Retirer le signet", "إزالة العلامة"),
+        "Tap the tassel to bookmark this page": ("Touchez le ruban pour marquer cette page", "انقر الشريط لوضع علامة على هذه الصفحة"),
+
+        // Help
+        "Using Mushaf": ("Utiliser Mushaf", "استخدام المصحف"),
+        "Done": ("OK", "تم"),
+        "Click an ayah to select it and see its translation, tafsir and note. Double-click to recite from it.":
+            ("Cliquez sur un verset pour voir sa traduction, son tafsir et sa note. Double-cliquez pour lancer la récitation.",
+             "انقر على آية لتحديدها وعرض ترجمتها وتفسيرها وملاحظتها، وانقر مرتين لبدء التلاوة منها."),
+        "Right-click an ayah for the menu: play, memorisation range, translation, tafsir, note, copy and share.":
+            ("Clic droit sur un verset pour le menu : lecture, plage de mémorisation, traduction, tafsir, note, copie et partage.",
+             "انقر بزر الفأرة الأيمن على آية لفتح القائمة: التلاوة ونطاق الحفظ والترجمة والتفسير والملاحظة والنسخ والمشاركة."),
+        "Tap the tassel at the top of a page to bookmark it. Tap it again to remove the bookmark.":
+            ("Touchez le ruban en haut d'une page pour la marquer, et touchez-le à nouveau pour retirer le signet.",
+             "انقر الشريط أعلى الصفحة لوضع علامة عليها، وانقره مرة أخرى لإزالتها."),
+        "Use the ← → keys, the toolbar arrows or a two-finger swipe to turn pages. Swiping can be turned off under Page Appearance.":
+            ("Utilisez les touches ← →, les flèches de la barre d'outils ou un balayage à deux doigts. Le balayage se désactive dans Apparence des pages.",
+             "استخدم مفتاحي ← → أو أسهم شريط الأدوات أو السحب بإصبعين لقلب الصفحات. يمكن إيقاف السحب من «مظهر الصفحات»."),
+        "Drag the slider below the page to jump anywhere; it shows the surah, juz' and hizb.":
+            ("Faites glisser le curseur sous la page pour aller n'importe où ; il indique la sourate, le juz' et le hizb.",
+             "اسحب المؤشر أسفل الصفحة للانتقال إلى أي موضع؛ ويعرض السورة والجزء والحزب."),
+        "In the recitation options, repeat each ayah or the whole selection (up to ∞) and pick a stopping point with Play To.":
+            ("Dans les options de récitation, répétez chaque verset ou toute la sélection (jusqu'à ∞) et choisissez un point d'arrêt.",
+             "من خيارات التلاوة كرّر كل آية أو التحديد كاملًا (حتى ∞) واختر نقطة التوقف."),
+        "Notes appear as yellow tabs in the page margin. Export them with your bookmarks from the File menu, as HTML, JSON or by email.":
+            ("Les notes apparaissent en onglets jaunes dans la marge. Exportez-les avec vos signets depuis le menu Fichier (HTML, JSON ou e-mail).",
+             "تظهر الملاحظات كعلامات صفراء في هامش الصفحة. صدّرها مع العلامات من قائمة «ملف» بصيغة HTML أو JSON أو بالبريد."),
+        "The Search tab finds words in the Arabic text, with or without diacritics, or in the translation.":
+            ("L'onglet Recherche trouve des mots dans le texte arabe, avec ou sans voyelles, ou dans la traduction.",
+             "يبحث تبويب «بحث» عن الكلمات في النص العربي بالتشكيل أو بدونه، أو في الترجمة."),
+        "Links like mushaf://ayah/2/255 or mushaf://page/50 open the app at that place.":
+            ("Les liens comme mushaf://ayah/2/255 ou mushaf://page/50 ouvrent l'app à cet endroit.",
+             "الروابط مثل mushaf://ayah/2/255 أو mushaf://page/50 تفتح التطبيق عند ذلك الموضع."),
+
+        // Dedication page
+        "Begin Reading": ("Commencer la lecture", "ابدأ القراءة"),
+    ]
+}
