@@ -23,7 +23,10 @@ struct MushafApp: App {
                 .environment(model)
                 .handlesExternalEvents(preferring: ["*"], allowing: ["*"])
                 .frame(minWidth: 820, minHeight: 600)
-                .task { await model.bootstrap() }
+                .task {
+                    await model.bootstrap()
+                    await model.updates.check()
+                }
         }
         .defaultSize(width: 1280, height: 900)
         .commands { AppCommands(model: model) }
@@ -51,6 +54,7 @@ struct AppCommands: Commands {
             Button(tr("Mushaf Help")) { model.showHelp = true }
                 .keyboardShortcut("?", modifiers: [.command])
             Button(tr("About This Sadaqa Jariyah")) { withAnimation { model.showDedication = true } }
+            Button(tr("Check for Updates…")) { Task { await model.updates.check(manual: true) } }
             Divider()
             Picker(tr("Language"), selection: Binding(get: { Localizer.shared.language }, set: { model.setLanguage($0) })) {
                 ForEach(AppLanguage.allCases) { Text($0.nativeName).tag($0) }

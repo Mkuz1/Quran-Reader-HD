@@ -9,12 +9,20 @@ if [[ "$(xcode-select -p)" == *CommandLineTools* && -d /Library/Developer/Comman
   export SDKROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk
 fi
 
+# One version for every platform: the VERSION file at the repository root.
+VERSION="$(tr -d '[:space:]' < VERSION)"
+IFS=. read -r MAJOR MINOR PATCH <<< "$VERSION"
+BUILD=$(( ${MAJOR:-0} * 10000 + ${MINOR:-0} * 100 + ${PATCH:-0} ))
+
 swift build -c release
 BIN="$(swift build -c release --show-bin-path)/MushafMac"
 APP=build/Mushaf.app
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN" "$APP/Contents/MacOS/Mushaf"
+# Amiri Quran (SIL OFL) for the ayah share cards, registered through ATSApplicationFontsPath.
+mkdir -p "$APP/Contents/Resources/Fonts"
+cp Assets/Fonts/AmiriQuran-Regular.ttf Assets/Fonts/OFL.txt "$APP/Contents/Resources/Fonts/"
 
 # App icon: every size from Assets/AppIcon.png (rendered by scripts/make-icon.swift).
 ICONSET="$(mktemp -d)/AppIcon.iconset"
@@ -36,8 +44,9 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <key>CFBundleExecutable</key><string>Mushaf</string>
   <key>CFBundleIconFile</key><string>AppIcon</string>
   <key>CFBundlePackageType</key><string>APPL</string>
-  <key>CFBundleShortVersionString</key><string>1.1</string>
-  <key>CFBundleVersion</key><string>2</string>
+  <key>CFBundleShortVersionString</key><string>$VERSION</string>
+  <key>CFBundleVersion</key><string>$BUILD</string>
+  <key>ATSApplicationFontsPath</key><string>Fonts</string>
   <key>LSMinimumSystemVersion</key><string>26.0</string>
   <key>LSApplicationCategoryType</key><string>public.app-category.reference</string>
   <key>NSHighResolutionCapable</key><true/>

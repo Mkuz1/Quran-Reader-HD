@@ -81,6 +81,8 @@ enum Remote {
     static func pageWords(_ page: Int) -> URL {
         URL(string: "https://api.quran.com/api/v4/verses/by_page/\(page)?words=true&word_fields=text_uthmani&per_page=50")!
     }
+    /// This repository's releases, newest first, for the update check.
+    static let releases = URL(string: "https://api.github.com/repos/\(repository)/releases?per_page=20")!
     static func audio(_ reciter: String, _ key: AyahKey) -> URL {
         URL(string: String(format: "https://everyayah.com/data/%@/%03d%03d.mp3", reciter, key.sura, key.ayah))!
     }

@@ -1,10 +1,20 @@
-# Quran Reader HD for macOS
+# Quran Reader HD for macOS, Windows and Android
 
 **صدقة جارية — Sadaqa Jariyah on behalf of Mohamad Koussa and Dima Ghannoum and their families.**
 
-A native SwiftUI Quran reader for macOS 26+
+A native SwiftUI Quran reader for macOS 26+, and a Flutter app with the same features for Windows and
+Android (phones, tablets and foldables). Downloads are on the [Releases](https://github.com/Mkuz1/Quran-Reader-HD/releases/latest) page.
 
 ![Quran Reader HD icon](Assets/AppIcon.png)
+
+| Platform | Download | Notes |
+|---|---|---|
+| macOS 26+ | `QuranReaderHD-<version>.dmg` | First launch: right-click the app → Open (not yet notarised) |
+| Windows 10/11 (64-bit) | `QuranReaderHD-<version>-Setup.exe` or `…-Windows-Portable.zip` | Installs for the current user only: **no administrator rights needed**. The zip needs no install at all |
+| Android 7+ | `QuranReaderHD-<version>.apk` | Two-page spreads on tablets and unfolded foldables, split across the hinge |
+
+Every version checks this repository's releases and shows a banner when a newer one is out, with a link to its
+download for that platform (Settings → Check for Updates on Windows/Android, Help → Check for Updates… on macOS).
 
 Requires **macOS 26 or later**: the interface uses Apple's Liquid Glass (floating glass playback dock and
 page scrubber, glass study header, tinted-glass opening page). The icon is drawn in code by
@@ -20,13 +30,37 @@ open build/Mushaf.app
 Only the Command Line Tools are needed. The script builds against the macOS 26.5 SDK when Xcode isn't
 selected, because the macOS 27 CLT SDK needs Xcode's SwiftUI macro plugin for `@State`.
 
+The Windows and Android app is in `flutter_app/` (Flutter 3.47):
+
+```bash
+cd flutter_app
+flutter run -d windows                 # or an Android device / emulator
+flutter build windows --release        # → build/windows/x64/runner/Release/QuranReaderHD.exe
+flutter build apk --release            # → build/app/outputs/flutter-apk/app-release.apk
+flutter analyze && flutter test        # includes layout tests for phone, foldable and desktop sizes
+```
+
+### Releases
+
+`VERSION` holds the version for all three platforms. `.github/workflows/release.yml` builds the DMG, the
+Windows installer (`flutter_app/windows/installer.iss`, Inno Setup, per-user) and portable zip, and the APK on
+every pull request. When `VERSION` changes on `main`, it publishes them together as release `v<version>` with
+`.github/release-notes.md`. Before publishing, `scripts/check-sources.sh` checks that every reciter and the
+French tafsir are still online.
+
+**Android signing.** Android only installs an update over an earlier version when both are signed with the same
+key. Add these repository secrets (Settings → Secrets and variables → Actions) so every release uses yours:
+`ANDROID_KEYSTORE_BASE64` (the `.jks` file, base64-encoded), `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`
+and `ANDROID_KEY_PASSWORD`. Without them the APK is signed with a throwaway key: it installs fine, but each new
+version has to replace the old one by uninstalling it first.
+
 ## Features
 
 | Quran Reader HD | Here |
 |---|---|
 | Madani mushaf pages, turned like a book | 604 page images, single page or two-page spread, slide transition, ←/→ keys |
 | Tap and hold an ayah for the menu | Click to select, right-click for the ayah menu, double-click to recite |
-| Verse-by-verse recitation, Abdul Basit | EveryAyah audio with 5 reciters, Abdul Basit Murattal by default; basmala played before each surah |
+| Verse-by-verse recitation, Abdul Basit | EveryAyah audio with 26 reciters, Abdul Basit Murattal by default; basmala played before each surah |
 | Repeat each verse / repeat selection | Repeat each ayah or the range up to ∞, Play To start/stop ayah |
 | Play to end of surah / whole Quran | Scope: this ayah, to end of surah, or continue through the Quran |
 | Highlight while reciting | Playing ayah is highlighted, and the reader follows it to the next page |
@@ -46,6 +80,8 @@ selected, because the macOS 27 CLT SDK needs Xcode's SwiftUI macro plugin for `@
 - **Recitation**: repeat up to ∞, and *Play To* with a chosen start and stopping ayah.
 - **Study view**: show Arabic, translation or both, plus optional tafsir.
 - **Copy & share**: an ayah with its translation and a "Surah X : Verse Y : Page Z" citation.
+- **Share as Image**: a card of the ayah with its full Uthmani text and tashkeel (Amiri Quran), the surah, an
+  optional translation and the app's name, in emerald or parchment, exported at 1080 px to share, copy or save.
 - **Export**: notes & bookmarks as HTML or JSON, or emailed as plain text through your default mail app (a `mailto:` link, so Outlook works too).
 - **Display**: brightness control, swipe-to-turn on/off, and Classic, Coloured or Night pages.
 - **Help sheet** (⌘?) and **deep links**: `mushaf://ayah/2/255`, `mushaf://page/50`, `mushaf://surah/18`.
@@ -70,11 +106,17 @@ page arrows keep book order. Switching language also picks that language's defau
   Rashid Maash).
 - Tafsir: Arabic (Al-Muyassar, Al-Jalalayn), English (Ibn Kathir abridged, Ma'arif al-Qur'an, Tazkirul Quran),
   French (Al-Mukhtasar, the abridged explanation, from quranenc.com).
-- Reciters: Abdul Basit (Murattal, Mujawwad), Al-Husary, Al-Minshawi, Mishary Alafasy, **Salah Bukhatir**.
+- Reciters (26): Abdul Basit (Murattal, Mujawwad), Al-Husary (Murattal, Mujawwad, Muallim), Al-Minshawi
+  (Murattal, Mujawwad), Mishary Alafasy, **Salah Bukhatir**, As-Sudais, Ash-Shuraim, Maher Al-Muaiqly,
+  Saad Al-Ghamdi, Abu Bakr Ash-Shatri, Ali Al-Hudhaify, Muhammad Ayyub, Muhammad Jibreel, Nasser Al-Qatami,
+  Yasser Ad-Dossari, Hani Ar-Rifai, Ahmed Al-Ajmi, Abdullah Basfar, Muhammad At-Tablawi, Fares Abbad,
+  Abdullah Al-Juhany and Ali Jaber.
 
 ## Where things come from and where they are stored
 
-Nothing is bundled in the app. Each item is downloaded the first time it's needed, then read from disk:
+Nothing is bundled in the app except the Amiri fonts (SIL Open Font License, `Assets/Fonts`). Each item is
+downloaded the first time it's needed, then read from disk. On Windows and Android the same files live in the
+app's own support folder (`%APPDATA%\com.mkoussa\Quran Reader HD` on Windows).
 
 | What | Downloaded from | Cached in `~/Library/Application Support/MushafMac/` |
 |---|---|---|
@@ -114,5 +156,14 @@ Sources/MushafMac/
   AudioController.swift recitation queue, repeats, prefetching
   AppModel.swift        navigation state, page image cache
   MushafReader.swift    page and spread views with the highlight canvas
+  ShareCard.swift       ayah image card and its share sheet
+  UpdateChecker.swift   GitHub release check and banner
   ContentView.swift, SidebarView.swift, AudioBar.swift, AyahInspector.swift, TextModeView.swift
+
+flutter_app/lib/        Windows and Android, the same structure in Dart
+  core/                 AyahKey, paths and downloads, Arabic normalisation, localisation table
+  data/                 glyph database, text library, metadata, notes & bookmarks, page install, word colouring
+  audio/                reciters and the recitation queue
+  update/               GitHub release check
+  ui/                   reader (spreads, hinge-aware), page, sidebar, inspector, dock, share card, settings
 ```

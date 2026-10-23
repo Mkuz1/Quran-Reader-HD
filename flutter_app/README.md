@@ -1,17 +1,4 @@
-# quran_reader_hd
+# Quran Reader HD for Windows and Android
 
-Quran Reader HD
-
-## Getting Started
-
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+The Flutter version of Quran Reader HD, with the same features as the macOS app in `../Sources/MushafMac`.
+See the main [README](../README.md) for building, releases and data sources.

@@ -174,7 +174,7 @@ const Map<String, (String, String)> stringsTable = {
   'Long-press an ayah for the menu: play, memorisation range, translation, tafsir, note, copy and share.': ('Appuyez longuement sur un verset pour le menu : lecture, plage de mémorisation, traduction, tafsir, note, copie et partage.', 'اضغط مطولًا على آية لفتح القائمة: التلاوة ونطاق الحفظ والترجمة والتفسير والملاحظة والنسخ والمشاركة.'),
   'Notes & Bookmarks': ('Notes et signets', 'الملاحظات والعلامات'),
   'Parchment': ('Parchemin', 'رقّ'),
-  'Quran Reader HD %@ is available. You have %@.': ('Quran Reader HD %@ est disponible. Vous avez la %@.', 'يتوفر Quran Reader HD %@، ولديك الإصدار %@.'),
+  'Quran Reader HD %@ is available. You have %@.': ('Quran Reader HD %@ est disponible. Vous avez la version %@.', 'يتوفر Quran Reader HD %@، ولديك الإصدار %@.'),
   'Save Image…': ('Enregistrer l\'image…', 'حفظ الصورة…'),
   'Saved': ('Enregistré', 'تم الحفظ'),
   'Settings': ('Réglages', 'الإعدادات'),

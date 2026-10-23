@@ -137,7 +137,7 @@ struct DedicationView: View {
 }
 
 /// Tiled eight-pointed stars (two overlapping squares), a classic Islamic geometric motif.
-private struct StarPattern: Shape {
+struct StarPattern: Shape {
     func path(in rect: CGRect) -> Path {
         var p = Path()
         let tile: CGFloat = 64
