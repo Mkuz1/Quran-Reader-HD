@@ -3,7 +3,11 @@ import SwiftUI
 /// Opening page: this app is a sadaqa jariyah (ongoing charity) on behalf of Mohamad Koussa and Dima Ghannoum.
 struct DedicationView: View {
     @Environment(AppModel.self) private var model
+    /// Opens the book where reading stopped (the first page on a first launch).
     let onContinue: () -> Void
+    /// Opens there and recites from the remembered ayah.
+    var onListen: (() -> Void)?
+    var onStartOver: (() -> Void)?
     @State private var appeared = false
 
     private static let gold = Color(red: 0.86, green: 0.72, blue: 0.42)
@@ -100,17 +104,7 @@ struct DedicationView: View {
                 .padding(.top, 10)
                 .environment(\.colorScheme, .dark)
 
-                Button(action: onContinue) {
-                    Text(tr("Begin Reading"))
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(Self.emeraldDeep)
-                        .padding(.horizontal, 22)
-                        .padding(.vertical, 4)
-                }
-                .buttonStyle(.glassProminent)
-                .tint(Self.gold)
-                .controlSize(.extraLarge)
-                .keyboardShortcut(.defaultAction)
+                startButtons
             }
             .padding(.horizontal, 60)
             .padding(.vertical, 44)
@@ -124,6 +118,49 @@ struct DedicationView: View {
         }
         .ignoresSafeArea()
         .onAppear { withAnimation(.easeOut(duration: 0.9)) { appeared = true } }
+    }
+
+    private var firstLaunch: Bool { model.page == 1 && model.resumeAyah == nil }
+
+    /// Where reading stopped: "Al-Baqara · Page 42 · Ayah 255".
+    private var resumeDescription: String {
+        let ayah = model.resumeAyah
+        let sura = ayah?.sura ?? model.firstAyah(on: model.page)?.sura
+        return ([sura.map { model.surahName($0) }, tr("Page %d", model.page), ayah.map { tr("Ayah %d", $0.ayah) }]
+            .compactMap { $0 }).joined(separator: " · ")
+    }
+
+    /// "Continue reading" with where reading stopped, "continue listening" when it stopped mid-recitation, and
+    /// "start from the beginning"; just "Begin Reading" on a first launch.
+    private var startButtons: some View {
+        VStack(spacing: 10) {
+            Button(action: onContinue) {
+                Text(tr(firstLaunch ? "Begin Reading" : "Continue Reading"))
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(Self.emeraldDeep)
+                    .padding(.horizontal, 22)
+                    .padding(.vertical, 4)
+            }
+            .buttonStyle(.glassProminent)
+            .tint(Self.gold)
+            .controlSize(.extraLarge)
+            .keyboardShortcut(.defaultAction)
+            if !firstLaunch {
+                Text(resumeDescription).font(.callout).foregroundStyle(.white.opacity(0.7))
+                HStack(spacing: 16) {
+                    if let onListen, model.resumeAyah != nil, model.lastListening {
+                        Button(action: onListen) { Label(tr("Continue Listening"), systemImage: "play.fill") }
+                            .buttonStyle(.glass)
+                            .tint(Self.gold)
+                    }
+                    if let onStartOver {
+                        Button(tr("Start from the Beginning"), action: onStartOver)
+                            .buttonStyle(.plain)
+                            .foregroundStyle(.white.opacity(0.7))
+                    }
+                }
+            }
+        }
     }
 
     /// A thin gold rule with a diamond, between sections.

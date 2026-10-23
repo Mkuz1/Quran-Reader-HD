@@ -162,6 +162,8 @@ class _MushafPageState extends State<MushafPage> {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTapUp: (d) {
+          // Full screen: a tap shows or hides the controls; long-press still opens the ayah menu.
+          if (model.fullScreen) return model.showControls(!model.controlsVisible);
           final key = _hit(d.localPosition, scale);
           model.select(key == model.selected ? null : key);
         },

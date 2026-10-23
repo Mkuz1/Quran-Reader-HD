@@ -60,13 +60,18 @@ void main() {
   });
 
   Future<void> pumpHome(WidgetTester tester, Size size,
-      {List<ui.DisplayFeature> features = const [], String language = 'en', bool dark = false, bool meta = false}) async {
-    SharedPreferences.setMockInitialValues({'pagesChoiceMade': true, 'lastPage': 1});
+      {List<ui.DisplayFeature> features = const [],
+      String language = 'en',
+      bool dark = false,
+      bool meta = false,
+      bool dedication = false,
+      Map<String, Object> saved = const {}}) async {
+    SharedPreferences.setMockInitialValues({'pagesChoiceMade': true, 'lastPage': 1, ...saved});
     final prefs = await SharedPreferences.getInstance();
     Localizer.init(prefs, Locale(language));
     tester.platformDispatcher.platformBrightnessTestValue = dark ? Brightness.dark : Brightness.light;
     addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
-    model = AppModel(prefs)..showDedication = false;
+    model = AppModel(prefs)..showDedication = dedication;
     // Words to colour red, as downloaded from quran.com on a device: the name of Allah in 1:1.
     model.words.allahWords[1] = {const WordRef(AyahKey(1, 1), 2)};
     // Offline there is no surah list; a short one with real names where the layout depends on them.
@@ -136,6 +141,59 @@ void main() {
     await finish(tester);
   });
 
+
+  testWidgets('full screen: the page alone, controls over it on a tap', (tester) async {
+    await pumpHome(tester, const Size(412, 892), saved: {'fullScreen': true});
+    expect(find.byType(AppBar), findsNothing);
+    expect(model.controlsVisible, isFalse);
+    // The page fills the screen's width, and nothing is kept free for the player.
+    final pageHeight = tester.getSize(find.byType(MushafPage).first).height;
+    expect(tester.getSize(find.byType(MushafPage).first).width, greaterThan(412 - 12));
+    // A single tap waits out the double-tap window (double-tap recites); then the controls slide in.
+    await tester.tapAt(const Offset(206, 446));
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(model.controlsVisible, isTrue);
+    expect(tester.getSize(find.byType(MushafPage).first).height, pageHeight);
+    await shot(tester, 'fullscreen-controls');
+    // They hide again by themselves.
+    await tester.pump(const Duration(seconds: 6));
+    expect(model.controlsVisible, isFalse);
+    await tester.tap(find.byType(MushafPage).first);
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(model.controlsVisible, isTrue);
+    await tester.tap(find.byIcon(Icons.fullscreen_exit));
+    await tester.pump();
+    expect(model.fullScreen, isFalse);
+    expect(find.byType(AppBar), findsOneWidget);
+    await finish(tester);
+  });
+
+  testWidgets('continue reading where it stopped', (tester) async {
+    await pumpHome(tester, const Size(412, 892),
+        dedication: true, saved: {'lastPage': 2, 'lastAyah': '2:3', 'lastListening': true});
+    expect(find.text('Continue Reading'), findsOneWidget);
+    expect(find.text('Continue Listening'), findsOneWidget);
+    expect(find.text('Start from the Beginning'), findsOneWidget);
+    expect(find.textContaining('Page 2 · Ayah 3'), findsOneWidget);
+    await shot(tester, 'continue');
+    await tester.ensureVisible(find.text('Continue Reading'));
+    await tester.tap(find.text('Continue Reading'));
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+    await tester.pump();
+    expect(model.showDedication, isFalse);
+    expect(model.selected, const AyahKey(2, 3));
+    expect(model.visiblePages(), contains(2));
+    await finish(tester);
+  });
+
+  testWidgets('first launch just begins', (tester) async {
+    await pumpHome(tester, const Size(412, 892), dedication: true);
+    expect(find.text('Begin Reading'), findsOneWidget);
+    expect(find.text('Continue Reading'), findsNothing);
+    await finish(tester);
+  });
 
   testWidgets('opening page on a small phone', (tester) async {
     await pumpHome(tester, const Size(320, 640));

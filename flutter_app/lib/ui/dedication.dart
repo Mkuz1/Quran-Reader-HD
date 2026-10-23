@@ -7,13 +7,64 @@ import 'share_card.dart';
 
 /// Opening page: this app is a sadaqa jariyah (ongoing charity) on behalf of Mohamad Koussa and Dima Ghannoum.
 class DedicationView extends StatelessWidget {
+  /// Opens the book where reading stopped (the first page on a first launch).
   final VoidCallback onContinue;
-  const DedicationView({super.key, required this.onContinue});
+
+  /// Opens there and recites from the remembered ayah.
+  final VoidCallback? onListen;
+  final VoidCallback? onStartOver;
+  const DedicationView({super.key, required this.onContinue, this.onListen, this.onStartOver});
+
+  /// "Continue reading" with where reading stopped, "continue listening" when it stopped mid-recitation, and
+  /// "start from the beginning"; just "Begin Reading" on a first launch.
+  List<Widget> _startButtons(Color gold) {
+    final page = model.page;
+    final ayah = model.resumeAyah;
+    final firstLaunch = page == 1 && ayah == null;
+    final primary = FilledButton(
+      style: FilledButton.styleFrom(
+        backgroundColor: gold,
+        foregroundColor: AppColors.emeraldDeep,
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+      ),
+      onPressed: onContinue,
+      child: Text(tr(firstLaunch ? 'Begin Reading' : 'Continue Reading')),
+    );
+    if (firstLaunch) return [primary];
+    final sura = ayah?.sura ?? model.firstAyah(page)?.sura;
+    final where = [
+      if (sura != null) model.surahName(sura),
+      tr('Page %d', [page]),
+      if (ayah != null) tr('Ayah %d', [ayah.ayah]),
+    ].join(' · ');
+    final muted = Colors.white.withValues(alpha: 0.7);
+    return [
+      primary,
+      const SizedBox(height: 8),
+      Text(where, textAlign: TextAlign.center, style: TextStyle(color: muted)),
+      if (onListen != null && ayah != null && model.lastListening) ...[
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          style: OutlinedButton.styleFrom(foregroundColor: gold, side: BorderSide(color: gold.withValues(alpha: 0.7))),
+          onPressed: onListen,
+          icon: const Icon(Icons.play_arrow),
+          label: Text(tr('Continue Listening')),
+        ),
+      ],
+      if (onStartOver != null)
+        TextButton(
+          style: TextButton.styleFrom(foregroundColor: muted),
+          onPressed: onStartOver,
+          child: Text(tr('Start from the Beginning')),
+        ),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: Localizer.shared,
+      listenable: Listenable.merge([Localizer.shared, model]),
       builder: (context, _) {
         final language = Localizer.shared.language;
         final dedication = switch (language) {
@@ -117,16 +168,7 @@ class DedicationView extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 18),
-                        FilledButton(
-                          style: FilledButton.styleFrom(
-                            backgroundColor: gold,
-                            foregroundColor: AppColors.emeraldDeep,
-                            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                            textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                          ),
-                          onPressed: onContinue,
-                          child: Text(tr('Begin Reading')),
-                        ),
+                        ..._startButtons(gold),
                       ]),
                     ),
                   ),

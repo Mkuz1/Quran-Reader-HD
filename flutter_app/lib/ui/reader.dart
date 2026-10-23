@@ -33,7 +33,10 @@ class MushafReader extends StatefulWidget {
 
   /// Space kept free at the bottom for the floating dock, so it never covers the page.
   final double bottomInset;
-  const MushafReader({super.key, this.fold, this.bottomInset = 0});
+
+  /// Full screen: the page gets nearly all the room, with only a hairline margin.
+  final bool edgeToEdge;
+  const MushafReader({super.key, this.fold, this.bottomInset = 0, this.edgeToEdge = false});
 
   @override
   State<MushafReader> createState() => _MushafReaderState();
@@ -138,7 +141,9 @@ class _MushafReaderState extends State<MushafReader> {
 
   Widget _spread(BuildContext context, int first, bool dual) {
     final coloured = model.theme == PageTheme.coloured;
-    final pad = EdgeInsets.fromLTRB(12, 14, 12, (coloured ? 14 : 22) + widget.bottomInset);
+    final side = widget.edgeToEdge ? 4.0 : 12.0;
+    final bottom = widget.edgeToEdge ? side : (coloured ? 14.0 : 22.0) + widget.bottomInset;
+    final pad = EdgeInsets.fromLTRB(side, side + 2, side, bottom);
     if (!dual) {
       return Padding(padding: pad, child: Center(child: MushafPage(page: first, outerEdgeIsRight: true)));
     }

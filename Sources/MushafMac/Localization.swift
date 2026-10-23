@@ -251,6 +251,10 @@ private enum Strings {
         // Dedication page
         "Begin Reading": ("Commencer la lecture", "ابدأ القراءة"),
 
+        // Continue where reading stopped
+        "Continue Listening": ("Continuer l'écoute", "متابعة الاستماع"),
+        "Start from the Beginning": ("Commencer depuis le début", "البدء من البداية"),
+
         // Ayah cards and update notifications
         "Share as Image": ("Partager en image", "مشاركة كصورة"),
         "Share as Image…": ("Partager en image…", "مشاركة كصورة…"),
