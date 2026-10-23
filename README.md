@@ -2,8 +2,7 @@
 
 **صدقة جارية — Sadaqa Jariyah on behalf of Mohamad Koussa and Dima Ghannoum and their families.**
 
-A native SwiftUI Quran reader for macOS 14+, built to match the feature set of *Quran Reader HD* (iPad)
-from its public App Store description. It shares no code or assets with that app.
+A native SwiftUI Quran reader for macOS 14+
 
 ![Quran Reader HD icon](Assets/AppIcon.png)
 
@@ -36,10 +35,7 @@ selected, because the macOS 27 CLT SDK needs Xcode's SwiftUI macro plugin for `@
 | Notes and bookmarks with export | Per-ayah notes (tinted on the page), page bookmarks, JSON export/import (File menu) |
 | iCloud last-page sync | Last page is mirrored to `NSUbiquitousKeyValueStore` (works only once signed with an iCloud entitlement) |
 
-## Added from reviewing Quran Reader HD 1.2's IPA
-
-The IPA's Core Data store, full-text indexes, nib names, localized strings and ObjC class names
-showed these features, now in Mushaf:
+## Added from reviewing Quran Reader HD Testers Feedback
 
 - **Search**: Arabic (no diacritics needed) or translation, with word suggestions and "Show more results".
 - **Juz' & Hizb index**: all 240 rub' al-hizb with their opening words; the hizb is also shown in the title bar.
