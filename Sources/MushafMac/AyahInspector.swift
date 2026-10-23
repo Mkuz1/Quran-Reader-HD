@@ -76,10 +76,6 @@ private struct EditionText: View {
     var body: some View {
         let edition = Edition.named(editionID)
         VStack(alignment: .leading, spacing: 8) {
-            if choices == Edition.tafsirs, Localizer.shared.language == .french {
-                Label(tr("No French tafsir is openly available yet; choose an English or Arabic tafsir."), systemImage: "info.circle")
-                    .font(.caption).foregroundStyle(.secondary)
-            }
             Picker(tr("Source"), selection: $editionID) {
                 ForEach(choices) { Text($0.title).tag($0.id) }
             }

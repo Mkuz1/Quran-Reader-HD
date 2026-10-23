@@ -44,6 +44,7 @@ struct Edition: Identifiable, Hashable {
         case alquranCloud
         case quranComTranslation(Int)   // whole Quran in one request
         case quranComTafsir(Int)        // fetched per surah
+        case quranEnc(String)           // quranenc.com translation key, fetched per surah
     }
     let id: String
     let title: String
@@ -66,6 +67,8 @@ struct Edition: Identifiable, Hashable {
                 source: .quranComTranslation(779)),
         Edition(id: "ar.muyassar", title: "التفسير الميسر — Al-Muyassar", kind: .tafsir, language: "ar"),
         Edition(id: "ar.jalalayn", title: "تفسير الجلالين — Al-Jalalayn", kind: .tafsir, language: "ar"),
+        Edition(id: "qe-french_mokhtasar", title: "Français — Al-Mukhtasar (Exégèse abrégée)", kind: .tafsir, language: "fr",
+                source: .quranEnc("french_mokhtasar")),
         Edition(id: "qc-tafsir-169", title: "English — Ibn Kathir (abridged)", kind: .tafsir, language: "en",
                 source: .quranComTafsir(169)),
         Edition(id: "qc-tafsir-168", title: "English — Ma'arif al-Qur'an", kind: .tafsir, language: "en",
@@ -77,11 +80,11 @@ struct Edition: Identifiable, Hashable {
     static var tafsirs: [Edition] { all.filter { $0.kind == .tafsir } }
     static func named(_ id: String) -> Edition { (all + [arabicSearch]).first { $0.id == id } ?? arabic }
 
-    /// Defaults when the UI language changes. No French tafsir is openly available, so French uses English.
+    /// Defaults when the UI language changes.
     static func defaults(for language: AppLanguage) -> (translation: String, tafsir: String) {
         switch language {
         case .english: ("en.sahih", "qc-tafsir-169")
-        case .french: ("fr.hamidullah", "qc-tafsir-169")
+        case .french: ("fr.hamidullah", "qe-french_mokhtasar")
         case .arabic: ("en.sahih", "ar.muyassar")
         }
     }
@@ -108,7 +111,7 @@ final class TextLibrary {
     private(set) var texts: [String: [[String]]] = [:]   // edition -> [sura-1][ayah-1]
     private(set) var loading: Set<String> = []
     private(set) var errors: [String: String] = [:]
-    /// Per-surah texts for editions fetched one surah at a time (quran.com tafsir): edition -> sura -> ayahs.
+    /// Per-surah texts for editions fetched one surah at a time (quran.com tafsir, quranenc): edition -> sura -> ayahs.
     private(set) var chapters: [String: [Int: [String]]] = [:]
     /// Arabic.normalize applied to every ayah of the plain edition, built once it loads.
     @ObservationIgnored private var normalizedArabic: [[String]] = []
@@ -123,13 +126,19 @@ final class TextLibrary {
     }
 
     func text(_ edition: String, _ key: AyahKey) -> String? {
-        if case .quranComTafsir = Edition.named(edition).source {
+        switch Edition.named(edition).source {
+        case .quranEnc:
             guard let ayahs = chapters[edition]?[key.sura], key.ayah - 1 < ayahs.count else { return nil }
-            if !ayahs[key.ayah - 1].isEmpty { return ayahs[key.ayah - 1] }
-            // Grouped commentary: an empty entry belongs to the nearest earlier ayah that has text.
-            guard let first = (1..<key.ayah).reversed().first(where: { !ayahs[$0 - 1].isEmpty }) else { return nil }
+            return ayahs[key.ayah - 1].isEmpty ? nil : ayahs[key.ayah - 1]
+        case .quranComTafsir:
+            guard let ayahs = chapters[edition]?[key.sura], !ayahs.isEmpty else { return nil }
+            if key.ayah - 1 < ayahs.count, !ayahs[key.ayah - 1].isEmpty { return ayahs[key.ayah - 1] }
+            // Grouped commentary: an empty (or trailing, omitted) entry belongs to the nearest earlier ayah that has text.
+            let last = min(key.ayah - 1, ayahs.count)
+            guard last >= 1, let first = (1...last).reversed().first(where: { !ayahs[$0 - 1].isEmpty }) else { return nil }
             let note = tr("Commentary for ayahs %@ is under %@.", "\(key.sura):\(first)–\(key.ayah)", "\(key.sura):\(first)")
             return note + "\n\n" + ayahs[first - 1]
+        default: break
         }
         guard let t = texts[edition], key.sura - 1 < t.count, key.ayah - 1 < t[key.sura - 1].count else { return nil }
         let text = t[key.sura - 1][key.ayah - 1]
@@ -197,6 +206,49 @@ final class TextLibrary {
         case .alquranCloud: await ensureAlquran(edition)
         case let .quranComTranslation(id): await ensureQuranComTranslation(edition, id)
         case let .quranComTafsir(id): if let sura { await ensureQuranComTafsir(edition, id, sura) }
+        case let .quranEnc(key): if let sura { await ensureQuranEnc(edition, key, sura) }
+        }
+    }
+
+    /// quranenc.com returns numbers as strings; accept either.
+    private struct QESura: Decodable {
+        struct A: Decodable {
+            let aya: Int
+            let translation: String
+            enum CodingKeys: String, CodingKey { case aya, translation }
+            init(from decoder: Decoder) throws {
+                let c = try decoder.container(keyedBy: CodingKeys.self)
+                if let n = try? c.decode(Int.self, forKey: .aya) { aya = n }
+                else if let n = Int(try c.decode(String.self, forKey: .aya)) { aya = n }
+                else { throw DecodingError.dataCorruptedError(forKey: .aya, in: c, debugDescription: "aya") }
+                translation = try c.decode(String.self, forKey: .translation)
+            }
+        }
+        let result: [A]
+    }
+
+    @MainActor
+    private func ensureQuranEnc(_ edition: String, _ key: String, _ sura: Int) async {
+        let tag = "\(edition)/\(sura)"
+        guard chapters[edition]?[sura] == nil, !loading.contains(tag) else { return }
+        loading.insert(tag)
+        defer { loading.remove(tag) }
+        let dest = Paths.text.appendingPathComponent("\(edition)-\(sura).json")
+        do {
+            if !FileManager.default.fileExists(atPath: dest.path) {
+                let url = URL(string: "https://quranenc.com/api/v1/translation/sura/\(key)/\(sura)")!
+                let (data, response) = try await URLSession.shared.data(from: url)
+                guard (response as? HTTPURLResponse)?.statusCode == 200 else { throw DownloadError.http(0, url) }
+                var byAyah: [Int: String] = [:]
+                for a in try JSONDecoder().decode(QESura.self, from: data).result { byAyah[a.aya] = HTMLText.plain(a.translation) }
+                let count = byAyah.keys.max() ?? 0
+                let ayahs = (0..<count).map { byAyah[$0 + 1] ?? "" }
+                try JSONEncoder().encode(ayahs).write(to: dest, options: .atomic)
+            }
+            chapters[edition, default: [:]][sura] = try JSONDecoder().decode([String].self, from: Data(contentsOf: dest))
+            errors[edition] = nil
+        } catch {
+            errors[edition] = error.localizedDescription
         }
     }
 

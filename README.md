@@ -68,9 +68,8 @@ page arrows keep book order. Switching language also picks that language's defau
 
 - Translations: English (Saheeh International, Pickthall), French (Hamidullah, Montada Islamic Foundation,
   Rashid Maash).
-- Tafsir: Arabic (Al-Muyassar, Al-Jalalayn), English (Ibn Kathir abridged, Ma'arif al-Qur'an, Tazkirul Quran).
-  **No French tafsir is openly available** from these sources, so the French UI says so and offers English
-  or Arabic tafsir.
+- Tafsir: Arabic (Al-Muyassar, Al-Jalalayn), English (Ibn Kathir abridged, Ma'arif al-Qur'an, Tazkirul Quran),
+  French (Al-Mukhtasar, the abridged explanation, from quranenc.com).
 - Reciters: Abdul Basit (Murattal, Mujawwad), Al-Husary, Al-Minshawi, Mishary Alafasy, **Salah Bukhatir**.
 
 ## Where things come from and where they are stored
@@ -84,6 +83,7 @@ Nothing is bundled in the app. Each item is downloaded the first time it's neede
 | Recitation, one MP3 per ayah | `everyayah.com/data/<reciter>/` | `audio/<reciter>/SSSAAA.mp3` |
 | Arabic text, translations, Arabic tafsir, surah/juz data | `api.alquran.cloud` | `text/`, `data/meta.json` |
 | French translations, English tafsir, word data | `api.quran.com` | `text/`, `words/` |
+| French tafsir (Al-Mukhtasar) | `quranenc.com` | `text/` |
 | Notes and bookmarks | — | `library.json` |
 
 The **mushaf pages are not shipped in the app or the DMG**. On first run the app offers to download all

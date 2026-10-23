@@ -106,6 +106,9 @@ struct PageView: View {
     let outerEdgeIsRight: Bool
     @State private var image: NSImage?
     @State private var error: String?
+    /// Ayah under the pointer for the context menu. Unlike `model.hovered` it isn't cleared when the
+    /// menu opens and hover ends, so the menu can't fall back to a previously selected ayah.
+    @State private var menuKey: AyahKey?
 
     var body: some View {
         Group {
@@ -221,7 +224,9 @@ struct PageView: View {
         .contentShape(Rectangle())
         .onContinuousHover { phase in
             switch phase {
-            case let .active(loc): model.hovered = db?.ayah(at: toImage(loc, size), page: page)
+            case let .active(loc):
+                model.hovered = db?.ayah(at: toImage(loc, size), page: page)
+                menuKey = model.hovered
             case .ended: model.hovered = nil
             }
         }
@@ -236,7 +241,7 @@ struct PageView: View {
             model.selected = key == model.selected ? nil : key
         }
         .contextMenu {
-            if let key = model.hovered ?? model.selected { AyahMenu(key: key) }
+            if let key = menuKey ?? model.selected { AyahMenu(key: key) }
         }
     }
 
