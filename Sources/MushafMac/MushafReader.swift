@@ -30,6 +30,8 @@ struct MushafReader: View {
     @Environment(\.colorScheme) private var scheme
     @FocusState private var focused: Bool
     @State private var swipe = SwipeMonitor()
+    /// Horizontal mouse drag in progress, for the page to follow the pointer before it turns.
+    @State private var dragOffset: CGFloat = 0
 
     var body: some View {
         let pages = model.visiblePages
@@ -43,6 +45,7 @@ struct MushafReader: View {
             }
         }
         .padding(16)
+        .offset(x: dragOffset)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .id(pages.first)
         .transition(.push(from: model.turningForward ? .leading : .trailing))
@@ -52,6 +55,21 @@ struct MushafReader: View {
             Color.black.opacity((1 - model.brightness) * 0.75).allowsHitTesting(false)
         }
         .clipped()
+        // Mouse swipe: click and drag across the page. Dragging rightwards pulls in the next page, as with
+        // the trackpad (Arabic books turn right-to-left). Short drags stay clicks for selecting ayahs.
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 24)
+                .onChanged { g in
+                    guard model.swipeEnabled, abs(g.translation.width) > abs(g.translation.height) else { return }
+                    dragOffset = g.translation.width * 0.35
+                }
+                .onEnded { g in
+                    let w = g.translation.width
+                    let turn = model.swipeEnabled && abs(w) > 90 && abs(w) > abs(g.translation.height) * 1.5
+                    withAnimation(.spring(duration: 0.3)) { dragOffset = 0 }
+                    if turn { model.turn(forward: w > 0) }
+                }
+        )
         .focusable()
         .focusEffectDisabled()
         .focused($focused)
@@ -331,11 +349,23 @@ final class SwipeMonitor {
     private var monitor: Any?
     private var accumulated: CGFloat = 0
     private var fired = false
+    private var lastWheelTurn = Date.distantPast
 
     func start(_ onSwipe: @escaping (_ forward: Bool) -> Void) {
         guard monitor == nil else { return }
         monitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { [weak self] event in
-            guard let self, event.hasPreciseScrollingDeltas, event.momentumPhase.isEmpty else { return event }
+            guard let self else { return event }
+            // A mouse wheel that scrolls sideways (tilt wheel, or Shift + wheel): one page per notch burst.
+            if !event.hasPreciseScrollingDeltas {
+                if abs(event.scrollingDeltaX) > abs(event.scrollingDeltaY), event.scrollingDeltaX != 0,
+                   Date().timeIntervalSince(lastWheelTurn) > 0.45 {
+                    lastWheelTurn = Date()
+                    let dx = event.isDirectionInvertedFromDevice ? event.scrollingDeltaX : -event.scrollingDeltaX
+                    onSwipe(dx > 0)
+                }
+                return event
+            }
+            guard event.momentumPhase.isEmpty else { return event }
             if event.phase.contains(.began) { accumulated = 0; fired = false }
             // With natural scrolling, fingers moving right give a positive delta: pull the next (left) page in.
             let dx = event.isDirectionInvertedFromDevice ? event.scrollingDeltaX : -event.scrollingDeltaX

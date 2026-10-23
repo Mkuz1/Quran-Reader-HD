@@ -50,11 +50,16 @@ struct SidebarView: View {
             }
             .listStyle(.sidebar)
 
-            if let progress = model.offlineProgress {
-                ProgressView(value: progress) {
-                    Text(tr("Downloading pages for offline use…")).font(.caption)
+            switch model.pageStore.state {
+            case let .downloading(fraction):
+                ProgressView(value: fraction) {
+                    Text(tr("Downloading pages… %d%%", Int(fraction * 100))).font(.caption).monospacedDigit()
                 }
                 .padding(10)
+            case .installing:
+                ProgressView(tr("Installing pages…")).controlSize(.small).padding(10)
+            default:
+                EmptyView()
             }
         }
         .searchable(text: $query, placement: .sidebar,

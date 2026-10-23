@@ -41,10 +41,11 @@ struct AppCommands: Commands {
             Button(tr("Email Notes & Bookmarks…")) { model.emailNotes() }
             Button(tr("Import Notes & Bookmarks…")) { model.library.importWithPanel() }
             Divider()
-            Button(tr("Download All Pages for Offline Reading")) {
-                Task { await model.downloadAllPages() }
+            if model.pageStore.isInstalled {
+                Button(tr("Remove Downloaded Pages")) { model.pageStore.remove() }
+            } else {
+                Button(tr("Download Pages for Offline Reading…")) { model.showPagesChoice = true }
             }
-            .disabled(model.offlineProgress != nil)
         }
         CommandGroup(replacing: .help) {
             Button(tr("Mushaf Help")) { model.showHelp = true }

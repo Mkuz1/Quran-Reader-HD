@@ -212,9 +212,9 @@ private enum Strings {
         "Tap the tassel at the top of a page to bookmark it. Tap it again to remove the bookmark.":
             ("Touchez le ruban en haut d'une page pour la marquer, et touchez-le à nouveau pour retirer le signet.",
              "انقر الشريط أعلى الصفحة لوضع علامة عليها، وانقره مرة أخرى لإزالتها."),
-        "Use the ← → keys, the toolbar arrows or a two-finger swipe to turn pages. Swiping can be turned off under Page Appearance.":
-            ("Utilisez les touches ← →, les flèches de la barre d'outils ou un balayage à deux doigts. Le balayage se désactive dans Apparence des pages.",
-             "استخدم مفتاحي ← → أو أسهم شريط الأدوات أو السحب بإصبعين لقلب الصفحات. يمكن إيقاف السحب من «مظهر الصفحات»."),
+        "Use the ← → keys, the toolbar arrows, a two-finger swipe, or click and drag the page with the mouse to turn pages. Swiping can be turned off under Page Appearance.":
+            ("Utilisez les touches ← →, les flèches de la barre d'outils, un balayage à deux doigts, ou cliquez-glissez la page avec la souris. Le balayage se désactive dans Apparence des pages.",
+             "استخدم مفتاحي ← → أو أسهم شريط الأدوات أو السحب بإصبعين، أو انقر واسحب الصفحة بالفأرة لقلب الصفحات. يمكن إيقاف السحب من «مظهر الصفحات»."),
         "Drag the slider below the page to jump anywhere; it shows the surah, juz' and hizb.":
             ("Faites glisser le curseur sous la page pour aller n'importe où ; il indique la sourate, le juz' et le hizb.",
              "اسحب المؤشر أسفل الصفحة للانتقال إلى أي موضع؛ ويعرض السورة والجزء والحزب."),
@@ -230,6 +230,26 @@ private enum Strings {
         "Links like mushaf://ayah/2/255 or mushaf://page/50 open the app at that place.":
             ("Les liens comme mushaf://ayah/2/255 ou mushaf://page/50 ouvrent l'app à cet endroit.",
              "الروابط مثل mushaf://ayah/2/255 أو mushaf://page/50 تفتح التطبيق عند ذلك الموضع."),
+
+        // Pages: install or read online
+        "Mushaf Pages": ("Pages du mushaf", "صفحات المصحف"),
+        "Download all 604 pages (about %d MB) from GitHub to read offline, or read online: each page loads as you open it.":
+            ("Téléchargez les 604 pages (environ %d Mo) depuis GitHub pour lire hors ligne, ou lisez en ligne : chaque page se charge à l'ouverture.",
+             "نزّل الصفحات الـ٦٠٤ (نحو %d ميغابايت) من GitHub للقراءة دون اتصال، أو اقرأ عبر الإنترنت: تُحمَّل كل صفحة عند فتحها."),
+        "Read Online": ("Lire en ligne", "القراءة عبر الإنترنت"),
+        "Download (%d MB)": ("Télécharger (%d Mo)", "تنزيل (%d ميغابايت)"),
+        "Downloading pages… %d%%": ("Téléchargement des pages… %d %%", "جارٍ تنزيل الصفحات… %d٪"),
+        "You can keep reading online while the pages download.": ("Vous pouvez continuer à lire en ligne pendant le téléchargement.", "يمكنك متابعة القراءة عبر الإنترنت أثناء التنزيل."),
+        "Cancel Download": ("Annuler le téléchargement", "إلغاء التنزيل"),
+        "Continue Reading": ("Continuer la lecture", "متابعة القراءة"),
+        "Installing pages…": ("Installation des pages…", "جارٍ تثبيت الصفحات…"),
+        "All pages are installed. The mushaf now works offline.": ("Toutes les pages sont installées. Le mushaf fonctionne hors ligne.", "ثُبّتت كل الصفحات، ويعمل المصحف الآن دون اتصال."),
+        "Remove Downloaded Pages": ("Supprimer les pages téléchargées", "حذف الصفحات المنزّلة"),
+        "Download Pages for Offline Reading…": ("Télécharger les pages pour lire hors ligne…", "تنزيل الصفحات للقراءة دون اتصال…"),
+        "Installed": ("Installées", "مثبّتة"),
+        "Remove": ("Supprimer", "حذف"),
+        "Online": ("En ligne", "عبر الإنترنت"),
+        "Download": ("Télécharger", "تنزيل"),
 
         // Dedication page
         "Begin Reading": ("Commencer la lecture", "ابدأ القراءة"),

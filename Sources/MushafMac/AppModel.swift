@@ -69,7 +69,9 @@ final class AppModel {
     var tafsirID: String = UserDefaults.standard.string(forKey: "tafsir") ?? "ar.jalalayn" {
         didSet { UserDefaults.standard.set(tafsirID, forKey: "tafsir") }
     }
-    var offlineProgress: Double?
+    let pageStore = PageStore()
+    /// First-run choice between downloading the pages and reading online.
+    var showPagesChoice = false
 
     // Display settings (the original's brightness window, swipe toggle and study display modes).
     var theme: PageTheme = PageTheme(rawValue: UserDefaults.standard.string(forKey: "theme") ?? "") ?? .coloured {
@@ -107,10 +109,7 @@ final class AppModel {
             let dbURL = Paths.data.appendingPathComponent("ayahinfo_1024.db")
             if !FileManager.default.fileExists(atPath: dbURL.path) {
                 status = .loading("Downloading ayah coordinates…")
-                let zip = try await Downloader.fetch(Remote.ayahInfoZip,
-                                                     to: Paths.data.appendingPathComponent("ayahinfo_1024.zip"))
-                try Downloader.unzip(zip, into: Paths.data)
-                try? FileManager.default.removeItem(at: zip)
+                try await Downloader.fetch(Remote.ayahInfoDB, to: dbURL)
             }
             let db = try GlyphDB(url: dbURL)
             self.db = db
@@ -297,15 +296,6 @@ final class AppModel {
         }
     }
 
-    func downloadAllPages() async {
-        guard offlineProgress == nil else { return }
-        offlineProgress = 0
-        for p in 1...Quran.pageCount {
-            _ = try? await images.file(for: p)
-            offlineProgress = Double(p) / Double(Quran.pageCount)
-        }
-        offlineProgress = nil
-    }
 }
 
 /// Page PNG cache: memory (NSCache) over disk over network.
@@ -316,9 +306,12 @@ final class PageImages {
 
     func cached(_ page: Int) -> NSImage? { cache.object(forKey: page as NSNumber) }
 
+    /// The installed page if present, otherwise fetched from GitHub into the online cache.
     func file(for page: Int) async throws -> URL {
-        let dest = Paths.pages.appendingPathComponent(String(format: "page%03d.png", page))
-        return try await Downloader.fetch(Remote.pageImage(page), to: dest)
+        let name = String(format: "page%03d.png", page)
+        let installed = Paths.pages.appendingPathComponent(name)
+        if FileManager.default.fileExists(atPath: installed.path) { return installed }
+        return try await Downloader.fetch(Remote.pageImage(page), to: Paths.onlinePages.appendingPathComponent(name))
     }
 
     func image(_ page: Int) async throws -> NSImage {

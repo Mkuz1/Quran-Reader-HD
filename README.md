@@ -79,19 +79,23 @@ Nothing is bundled in the app. Each item is downloaded the first time it's neede
 
 | What | Downloaded from | Cached in `~/Library/Application Support/MushafMac/` |
 |---|---|---|
-| Mushaf page images (604 PNGs, 1024×1656) | `android.quran.com/data/width_1024/` | `pages/page001.png` … |
-| Ayah positions on the pages | `android.quran.com/data/databases/ayahinfo/` | `data/ayahinfo_1024.db` |
+| Mushaf page images (604 PNGs, 1024×1656) | this repo: `pages/` (online) or the `pages-v1` release zip (install) | `pages/` when installed, `~/Library/Caches/MushafMac/pages` when online |
+| Ayah positions on the pages | this repo: `data/ayahinfo_1024.db` | `data/ayahinfo_1024.db` |
 | Recitation, one MP3 per ayah | `everyayah.com/data/<reciter>/` | `audio/<reciter>/SSSAAA.mp3` |
 | Arabic text, translations, Arabic tafsir, surah/juz data | `api.alquran.cloud` | `text/`, `data/meta.json` |
 | French translations, English tafsir, word data | `api.quran.com` | `text/`, `words/` |
 | Notes and bookmarks | — | `library.json` |
 
-File → Download All Pages for Offline Reading fetches all 604 pages at once.
+The **mushaf pages are not shipped in the app or the DMG**. On first run the app offers to download all
+604 pages (≈75 MB) in one go from this repository's `pages-v1` release (`QuranReaderHD-Pages.zip`), or to read
+online, in which case each page is fetched from `pages/` in this repository as it is opened and kept in
+`~/Library/Caches/MushafMac/pages`. Installed pages live in `~/Library/Application Support/MushafMac/pages`
+and can be removed again (File menu, or Page Appearance). `./make-dmg.sh` builds `build/QuranReaderHD.dmg`.
 
 ## Data sources (downloaded on demand, cached in `~/Library/Application Support/MushafMac`)
 
-- Page images and ayah coordinates (`ayahinfo_1024.db`): `android.quran.com`, the CDN of the open-source
-  Quran for Android app.
+- Page images and ayah coordinates (`ayahinfo_1024.db`): originally from `android.quran.com`, the CDN of the
+  open-source Quran for Android app; now hosted in this repository (`pages/`, `data/`).
 - Recitation audio: `everyayah.com`.
 - Text, translations, tafsir, surah and juz metadata: `api.alquran.cloud`.
 

@@ -43,7 +43,15 @@ enum Paths {
         return url
     }
 
+    /// Installed (downloaded) pages, kept until the user removes them.
     static var pages: URL { dir("pages") }
+    /// Pages fetched while reading online: in Caches, so macOS may purge them.
+    static let onlinePages: URL = {
+        let base = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
+        let url = base.appendingPathComponent("MushafMac/pages", isDirectory: true)
+        try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        return url
+    }()
     static var data: URL { dir("data") }
     static var text: URL { dir("text") }
     static var words: URL { dir("words") }
@@ -51,13 +59,20 @@ enum Paths {
     static var library: URL { root.appendingPathComponent("library.json") }
 }
 
-/// Open data sources. Page images and ayah coordinates are the ones the
-/// open-source Quran for Android app uses; audio is EveryAyah; text is alquran.cloud.
+/// Data sources. Mushaf pages and ayah positions are served from this project's GitHub repository
+/// (one file per page for online reading, a release zip for installing); audio is EveryAyah; text is
+/// alquran.cloud and quran.com.
 enum Remote {
+    static let repository = "Mkuz1/Quran-Reader-HD"
+    private static let raw = "https://raw.githubusercontent.com/\(repository)/main"
+
     static func pageImage(_ page: Int) -> URL {
-        URL(string: String(format: "https://android.quran.com/data/width_1024/page%03d.png", page))!
+        URL(string: String(format: "\(raw)/pages/page%03d.png", page))!
     }
-    static let ayahInfoZip = URL(string: "https://android.quran.com/data/databases/ayahinfo/ayahinfo_1024.zip")!
+    static let ayahInfoDB = URL(string: "\(raw)/data/ayahinfo_1024.db")!
+    /// All 604 pages in one archive, attached to the repository's "pages-v1" release.
+    static let pagesArchive = URL(string: "https://github.com/\(repository)/releases/download/pages-v1/QuranReaderHD-Pages.zip")!
+    static let pagesArchiveMB = 75
     static let meta = URL(string: "https://api.alquran.cloud/v1/meta")!
     static func edition(_ id: String) -> URL {
         URL(string: "https://api.alquran.cloud/v1/quran/\(id)")!

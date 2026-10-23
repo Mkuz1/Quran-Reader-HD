@@ -62,11 +62,18 @@ struct ContentView: View {
         }
         .onOpenURL { model.handle($0) }
         .sheet(isPresented: Binding(get: { model.showHelp }, set: { model.showHelp = $0 })) { HelpView().appLayoutDirection() }
+        .sheet(isPresented: Binding(get: { model.showPagesChoice }, set: { model.showPagesChoice = $0 })) { PagesChoiceView() }
         .onChange(of: model.translationID) { _, id in Task { await model.text.ensure(id) } }
         .onChange(of: model.tafsirID) { _, id in Task { await model.text.ensure(id, sura: model.selected?.sura) } }
 
             if model.showDedication {
-                DedicationView { withAnimation(.easeInOut(duration: 0.5)) { model.showDedication = false } }
+                DedicationView {
+                    withAnimation(.easeInOut(duration: 0.5)) { model.showDedication = false }
+                    // First run: offer to install the pages (they are not shipped in the app).
+                    if !model.pageStore.isInstalled, !UserDefaults.standard.bool(forKey: "pagesChoiceMade") {
+                        model.showPagesChoice = true
+                    }
+                }
                     .appLayoutDirection()
                     .transition(.opacity)
                     .zIndex(1)
@@ -194,6 +201,19 @@ private struct DisplayButton: View {
                         }
                     }
                     Toggle(tr("Swipe to turn pages"), isOn: $model.swipeEnabled)
+                    LabeledContent(tr("Pages")) {
+                        if model.pageStore.isInstalled {
+                            HStack {
+                                Label(tr("Installed"), systemImage: "checkmark.circle.fill").foregroundStyle(.secondary)
+                                Button(tr("Remove")) { model.pageStore.remove() }
+                            }
+                        } else {
+                            HStack {
+                                Label(tr("Online"), systemImage: "icloud").foregroundStyle(.secondary)
+                                Button(tr("Download")) { shown = false; model.showPagesChoice = true }
+                            }
+                        }
+                    }
                     Toggle(tr("Two-page spread"), isOn: $model.dualPage)
                 }
                 .formStyle(.grouped)
@@ -282,7 +302,7 @@ struct HelpView: View {
         ("hand.tap", "Click an ayah to select it and see its translation, tafsir and note. Double-click to recite from it."),
         ("contextualmenu.and.cursorarrow", "Right-click an ayah for the menu: play, memorisation range, translation, tafsir, note, copy and share."),
         ("bookmark", "Tap the tassel at the top of a page to bookmark it. Tap it again to remove the bookmark."),
-        ("arrow.left.arrow.right", "Use the ← → keys, the toolbar arrows or a two-finger swipe to turn pages. Swiping can be turned off under Page Appearance."),
+        ("arrow.left.arrow.right", "Use the ← → keys, the toolbar arrows, a two-finger swipe, or click and drag the page with the mouse to turn pages. Swiping can be turned off under Page Appearance."),
         ("slider.horizontal.below.rectangle", "Drag the slider below the page to jump anywhere; it shows the surah, juz' and hizb."),
         ("repeat", "In the recitation options, repeat each ayah or the whole selection (up to ∞) and pick a stopping point with Play To."),
         ("note.text", "Notes appear as yellow tabs in the page margin. Export them with your bookmarks from the File menu, as HTML, JSON or by email."),
