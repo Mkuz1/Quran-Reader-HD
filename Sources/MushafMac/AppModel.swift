@@ -100,6 +100,13 @@ final class AppModel {
     }
 
     init() {
+        // French used to default to English Ibn Kathir for lack of a French tafsir; move those users to the French one once.
+        if !UserDefaults.standard.bool(forKey: "frenchTafsirAdded") {
+            UserDefaults.standard.set(true, forKey: "frenchTafsirAdded")
+            if Localizer.shared.language == .french, tafsirID == "qc-tafsir-169" {
+                tafsirID = Edition.defaults(for: .french).tafsir
+            }
+        }
         page = library.lastPage
         library.onRemotePage = { [weak self] remote in self?.go(to: remote) }
     }

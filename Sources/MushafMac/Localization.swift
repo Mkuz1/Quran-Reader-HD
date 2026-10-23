@@ -164,9 +164,6 @@ private enum Strings {
         "Source": ("Source", "المصدر"),
         "Show": ("Afficher", "عرض"),
         "Saved %@": ("Enregistré %@", "حُفظت %@"),
-        "No French tafsir is openly available yet; choose an English or Arabic tafsir.":
-            ("Aucun tafsir en français n'est disponible librement pour l'instant ; choisissez un tafsir en anglais ou en arabe.",
-             "لا يتوفر تفسير بالفرنسية بشكل مفتوح حاليًا؛ اختر تفسيرًا بالإنجليزية أو العربية."),
         "Commentary for ayahs %@ is under %@.": ("Le commentaire des versets %@ se trouve sous %@.", "تفسير الآيات %@ مذكور عند الآية %@."),
         "Makki": ("Mecquoise", "مكية"),
         "Madani": ("Médinoise", "مدنية"),

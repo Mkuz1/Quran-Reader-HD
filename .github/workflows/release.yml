@@ -1,0 +1,35 @@
+# Builds QuranReaderHD.dmg on macOS for every pull request, as a compile check. On main, when the version in
+# make-app.sh has no release yet, publishes the DMG as release v<version> with .github/release-notes.md as the
+# notes ({{SHA256}} is replaced by the DMG's checksum).
+name: Release
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    paths: [make-app.sh, .github/workflows/release.yml, .github/release-notes.md]
+
+permissions:
+  contents: write
+
+jobs:
+  dmg:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - name: Toolchain
+        run: xcodebuild -version && swift --version
+      - name: Build DMG
+        run: ./make-dmg.sh
+      - name: Publish release
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(sed -n 's|.*<key>CFBundleShortVersionString</key><string>\([^<]*\)</string>.*|\1|p' make-app.sh)
+          tag="v$version"
+          if gh release view "$tag" >/dev/null 2>&1; then echo "$tag is already released"; exit 0; fi
+          sha=$(shasum -a 256 build/QuranReaderHD.dmg | cut -d' ' -f1)
+          sed "s/{{SHA256}}/$sha/" .github/release-notes.md > "$RUNNER_TEMP/notes.md"
+          gh release create "$tag" build/QuranReaderHD.dmg --target "$GITHUB_SHA" \
+            --title "Quran Reader HD $version" --notes-file "$RUNNER_TEMP/notes.md"
