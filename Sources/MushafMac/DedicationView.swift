@@ -103,23 +103,21 @@ struct DedicationView: View {
                 Button(action: onContinue) {
                     Text(tr("Begin Reading"))
                         .font(.system(size: 16, weight: .semibold))
-                        .padding(.horizontal, 34)
-                        .padding(.vertical, 11)
                         .foregroundStyle(Self.emeraldDeep)
-                        .background(Capsule().fill(Self.gold))
-                        .shadow(color: Self.gold.opacity(0.4), radius: 10)
+                        .padding(.horizontal, 22)
+                        .padding(.vertical, 4)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.glassProminent)
+                .tint(Self.gold)
+                .controlSize(.extraLarge)
                 .keyboardShortcut(.defaultAction)
             }
             .padding(.horizontal, 60)
             .padding(.vertical, 44)
-            .background {
-                RoundedRectangle(cornerRadius: 28)
-                    .fill(Self.emeraldDeep.opacity(0.55))
-                    .overlay(RoundedRectangle(cornerRadius: 28).strokeBorder(Self.gold.opacity(0.7), lineWidth: 1.5))
-                    .overlay(RoundedRectangle(cornerRadius: 22).strokeBorder(Self.gold.opacity(0.35), lineWidth: 1).padding(7))
-            }
+            // Liquid Glass card tinted emerald, with a fine double gold rule.
+            .glassEffect(.regular.tint(Self.emerald.opacity(0.35)), in: RoundedRectangle(cornerRadius: 32))
+            .overlay(RoundedRectangle(cornerRadius: 32).strokeBorder(Self.gold.opacity(0.55), lineWidth: 1.2))
+            .overlay(RoundedRectangle(cornerRadius: 25).strokeBorder(Self.gold.opacity(0.25), lineWidth: 1).padding(7))
             .padding(30)
             .opacity(appeared ? 1 : 0)
             .scaleEffect(appeared ? 1 : 0.97)

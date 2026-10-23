@@ -5,6 +5,12 @@
 A native SwiftUI Quran reader for macOS 14+, built to match the feature set of *Quran Reader HD* (iPad)
 from its public App Store description. It shares no code or assets with that app.
 
+![Quran Reader HD icon](Assets/AppIcon.png)
+
+Requires **macOS 26 or later**: the interface uses Apple's Liquid Glass (floating glass playback dock and
+page scrubber, glass study header, tinted-glass opening page). The icon is drawn in code by
+`scripts/make-icon.swift` (emerald glass, gold Rub el Hizb, «قرآن» in Thuluth) and packaged by `make-app.sh`.
+
 ## Build
 
 ```bash

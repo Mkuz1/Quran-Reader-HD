@@ -13,6 +13,8 @@ extension Color {
     static let frameGold = Color(red: 0.69, green: 0.54, blue: 0.24)
     static let frameGreen = Color(red: 0.24, green: 0.42, blue: 0.29)
     static let allahRed = Color(red: 0.78, green: 0.13, blue: 0.10)
+    /// App accent: the emerald of the icon and the opening page.
+    static let appAccent = Color(red: 0.05, green: 0.47, blue: 0.36)
 }
 
 extension AppModel {

@@ -8,7 +8,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.activate(ignoringOtherApps: true)
     }
 
-    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
+    // Not quitting after the last window closes: at launch the system's "reopen windows?" alert can be the
+    // only window, and quitting when it closes would end the app before the main window appears.
 }
 
 @main

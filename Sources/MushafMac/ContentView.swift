@@ -8,6 +8,7 @@ struct ContentView: View {
         ZStack {
         NavigationSplitView {
             SidebarView()
+                .appLayoutDirection()
                 .navigationSplitViewColumnWidth(min: 220, ideal: 270, max: 360)
         } detail: {
             VStack(spacing: 0) {
@@ -23,40 +24,57 @@ struct ContentView: View {
                         Button(tr("Try Again")) { Task { await model.bootstrap() } }
                     }
                 case .ready:
-                    switch model.mode {
-                    case .mushaf: MushafReader()
-                    case .text: TextModeView()
+                    Group {
+                        switch model.mode {
+                        case .mushaf: MushafReader()
+                        case .text: TextModeView().appLayoutDirection()
+                        }
                     }
-                    PageSlider()
-                    Divider()
-                    AudioBar()
+                    // Floating Liquid Glass controls; the page background continues underneath them.
+                    .safeAreaInset(edge: .bottom, spacing: 0) {
+                        VStack(spacing: 10) {
+                            PageSlider()
+                            AudioBar()
+                        }
+                        .appLayoutDirection()
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 16)
+                        .padding(.top, 6)
+                    }
                 }
             }
+            // Keeps the reading area (and its glass dock) from being squeezed below what the dock needs.
+            .frame(minWidth: 460)
             .inspector(isPresented: $model.showInspector) {
                 AyahInspector()
+                    .appLayoutDirection()
                     .inspectorColumnWidth(min: 280, ideal: 360, max: 520)
             }
         }
-        .navigationTitle(model.status == .ready ? model.pageTitle(model.page) : tr("Mushaf"))
-        .navigationSubtitle(model.status == .ready
+        .navigationTitle(model.showDedication ? "" : model.status == .ready ? model.pageTitle(model.page) : tr("Mushaf"))
+        .navigationSubtitle(model.status == .ready && !model.showDedication
             ? "\(tr("Juz' %d", model.juz(for: model.page))) · \(AppModel.quarterLabel(model.quarterIndex(for: model.page)))" : "")
-        .toolbar { toolbar }
-        .toolbar(model.showDedication ? .hidden : .visible, for: .windowToolbar)
+        // Hiding the window toolbar here changes safe areas mid-layout and can crash AppKit on macOS 26,
+        // so the toolbar stays and only its items are left out while the opening page shows.
+        .toolbar { if !model.showDedication { toolbar } }
         .onChange(of: model.audio.current) { _, key in
             if let key { model.go(to: key, select: false) }
         }
         .onOpenURL { model.handle($0) }
-        .sheet(isPresented: Binding(get: { model.showHelp }, set: { model.showHelp = $0 })) { HelpView() }
+        .sheet(isPresented: Binding(get: { model.showHelp }, set: { model.showHelp = $0 })) { HelpView().appLayoutDirection() }
         .onChange(of: model.translationID) { _, id in Task { await model.text.ensure(id) } }
         .onChange(of: model.tafsirID) { _, id in Task { await model.text.ensure(id, sura: model.selected?.sura) } }
 
             if model.showDedication {
                 DedicationView { withAnimation(.easeInOut(duration: 0.5)) { model.showDedication = false } }
+                    .appLayoutDirection()
                     .transition(.opacity)
                     .zIndex(1)
             }
         }
-        .environment(\.layoutDirection, Localizer.shared.language.layoutDirection)
+        .tint(Color.appAccent)
+        // Right-to-left is applied per pane (.appLayoutDirection()), not here: on the NavigationSplitView root it
+        // makes AppKit (macOS 26) loop on split-view minimum sizes and abort.
         .environment(\.locale, Locale(identifier: Localizer.shared.language.rawValue))
     }
 
@@ -191,30 +209,69 @@ struct PageSlider: View {
 
     var body: some View {
         let shown = Int(dragValue ?? Double(model.page))
+        // Constant, small minimum width: the label truncates (see AudioBar for why this matters).
         HStack(spacing: 12) {
             Text(label(for: shown))
                 .font(.caption.monospacedDigit())
                 .foregroundStyle(.secondary)
-                .frame(width: 250, alignment: .leading)
                 .lineLimit(1)
-            Slider(value: Binding(get: { dragValue ?? Double(model.page) }, set: { dragValue = $0.rounded() }),
-                   in: 1...Double(Quran.pageCount)) { editing in
-                if !editing, let v = dragValue {
-                    model.go(to: Int(v))
-                    dragValue = nil
-                }
-            }
-            .environment(\.layoutDirection, .rightToLeft)
-            .controlSize(.small)
+                .frame(minWidth: 0, maxWidth: 300, alignment: .leading)
+                .layoutPriority(-1)
+            scrubber.frame(minWidth: 80)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 4)
-        .background(.bar)
+        .padding(.horizontal, 18)
+        .frame(height: 34)
+        .glassEffect(.regular, in: Capsule())
+    }
+
+    private var scrubber: some View {
+        PageScrubber(value: dragValue ?? Double(model.page),
+                     onChange: { dragValue = $0 },
+                     onEnd: { if let v = dragValue { model.go(to: Int(v)) }; dragValue = nil })
     }
 
     private func label(for page: Int) -> String {
         let sura = model.firstAyah(on: page).map { model.surahName($0.sura) } ?? ""
         return "\(tr("Page %d", page)) · \(sura) · \(tr("Juz' %d", model.juz(for: page))) · \(AppModel.quarterLabel(model.quarterIndex(for: page)))"
+    }
+}
+
+/// SwiftUI page scrubber: page 1 at the right edge, like the book. Drawn by hand rather than with
+/// Slider, whose AppKit control loops on layout in this window when linked against macOS 26.
+private struct PageScrubber: View {
+    let value: Double
+    let onChange: (Double) -> Void
+    let onEnd: () -> Void
+
+    var body: some View {
+        GeometryReader { geo in
+            let w = geo.size.width
+            let fraction = (value - 1) / Double(Quran.pageCount - 1)
+            let x = w - CGFloat(fraction) * w          // right-to-left
+            ZStack(alignment: .leading) {
+                Capsule().fill(.primary.opacity(0.12)).frame(height: 5)
+                Capsule().fill(Color.appAccent.opacity(0.85))
+                    .frame(width: max(w - x, 0), height: 5)
+                    .offset(x: x)
+                Circle()
+                    .fill(.white)
+                    .frame(width: 16, height: 16)
+                    .shadow(color: .black.opacity(0.25), radius: 2, y: 1)
+                    .glassEffect(.regular.interactive(), in: Circle())
+                    .offset(x: min(max(x - 8, 0), w - 16))
+            }
+            .frame(maxHeight: .infinity)
+            .contentShape(Rectangle())
+            .gesture(DragGesture(minimumDistance: 0)
+                .onChanged { g in
+                    let f = 1 - min(max(g.location.x / w, 0), 1)
+                    onChange((1 + f * Double(Quran.pageCount - 1)).rounded())
+                }
+                .onEnded { _ in onEnd() })
+        }
+        .frame(height: 20)
+        // Positions are computed right-to-left by hand; don't let an Arabic environment mirror them again.
+        .environment(\.layoutDirection, .leftToRight)
     }
 }
 

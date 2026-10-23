@@ -27,6 +27,13 @@ final class Localizer {
     }
 }
 
+extension View {
+    /// Lays the view out right-to-left when the UI language is Arabic.
+    func appLayoutDirection() -> some View {
+        environment(\.layoutDirection, Localizer.shared.language.layoutDirection)
+    }
+}
+
 /// Translates an English UI string; unknown strings fall back to English.
 func tr(_ english: String) -> String {
     switch Localizer.shared.language {

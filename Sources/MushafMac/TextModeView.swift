@@ -30,13 +30,18 @@ struct TextModeView: View {
                 Toggle(tr("Tafsir"), isOn: $showTafsir).toggleStyle(.switch).controlSize(.small)
             }
             .buttonStyle(.borderless)
-            .padding(10)
-            Divider()
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .glassEffect(.regular, in: Capsule())
+            .padding(.horizontal, 20)
+            .padding(.top, 12)
+            .padding(.bottom, 4)
             ScrollViewReader { proxy in
                 List(1...max(count, 1), id: \.self) { ayah in
                     row(AyahKey(sura, ayah)).id(ayah)
                 }
                 .listStyle(.inset)
+                .scrollContentBackground(.hidden)
                 .onChange(of: model.audio.current) { _, key in
                     if let key, key.sura == sura { withAnimation { proxy.scrollTo(key.ayah, anchor: .center) } }
                 }
