@@ -72,7 +72,7 @@ enum Remote {
     static let ayahInfoDB = URL(string: "\(raw)/data/ayahinfo_1024.db")!
     /// All 604 pages in one archive, attached to the repository's "pages-v1" release.
     static let pagesArchive = URL(string: "https://github.com/\(repository)/releases/download/pages-v1/QuranReaderHD-Pages.zip")!
-    static let pagesArchiveMB = 75
+    static let pagesArchiveMB = 57
     static let meta = URL(string: "https://api.alquran.cloud/v1/meta")!
     static func edition(_ id: String) -> URL {
         URL(string: "https://api.alquran.cloud/v1/quran/\(id)")!

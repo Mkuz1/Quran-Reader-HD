@@ -87,7 +87,7 @@ Nothing is bundled in the app. Each item is downloaded the first time it's neede
 | Notes and bookmarks | — | `library.json` |
 
 The **mushaf pages are not shipped in the app or the DMG**. On first run the app offers to download all
-604 pages (≈75 MB) in one go from this repository's `pages-v1` release (`QuranReaderHD-Pages.zip`), or to read
+604 pages (≈57 MB) in one go from this repository's `pages-v1` release (`QuranReaderHD-Pages.zip`), or to read
 online, in which case each page is fetched from `pages/` in this repository as it is opened and kept in
 `~/Library/Caches/MushafMac/pages`. Installed pages live in `~/Library/Application Support/MushafMac/pages`
 and can be removed again (File menu, or Page Appearance). `./make-dmg.sh` builds `build/QuranReaderHD.dmg`.
