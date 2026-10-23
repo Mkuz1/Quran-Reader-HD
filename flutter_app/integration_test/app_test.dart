@@ -17,29 +17,39 @@ void main() {
     await prefs.setString('theme', 'coloured');
     await prefs.setInt('lastPage', 17);
     await prefs.setBool('pagesChoiceMade', true);
-    // main() installs the app's error display; the test framework wants its own back afterwards. Any build
-    // error is reported by the framework itself, with its stack, and fails the test.
+    // main() installs the app's error display; the test framework checks its own is back when the test body
+    // ends (before tear-downs run). Any build error is reported by the framework itself, with its stack.
     final errorBuilder = ErrorWidget.builder;
-    addTearDown(() => ErrorWidget.builder = errorBuilder);
-    await app.main();
-    await tester.pump(const Duration(seconds: 1));
-
-    // The opening page, then the mushaf.
-    await tester.tap(find.byType(FilledButton).last);
-    await tester.pump(const Duration(seconds: 1));
-
-    // Wait for the ayah database, the page image and the word colouring to download.
-    for (var i = 0; i < 90; i++) {
-      await tester.pump(const Duration(seconds: 1));
-      final loaded = model.status == LoadStatus.ready &&
-          tester.widgetList<RawImage>(find.byType(RawImage)).any((r) => r.image != null) &&
-          model.words.allahWords.containsKey(17);
-      if (loaded) break;
+    try {
+      await _run(tester);
+    } finally {
+      ErrorWidget.builder = errorBuilder;
     }
-    await tester.pump(const Duration(seconds: 2));
-    debugPrint('DEVICE CHECK status=${model.status} page=${model.page} '
-        'images=${tester.widgetList<RawImage>(find.byType(RawImage)).where((r) => r.image != null).length} '
-        'allahWords=${model.words.allahWords[17]?.length}');
-    expect(tester.widgetList<RawImage>(find.byType(RawImage)).any((r) => r.image != null), isTrue);
   });
+}
+
+Future<void> _run(WidgetTester tester) async {
+  await app.main();
+  await tester.pump(const Duration(seconds: 1));
+
+  // The opening page, then the mushaf.
+  await tester.tap(find.byType(FilledButton).last);
+  await tester.pump(const Duration(seconds: 1));
+
+  // Wait for the ayah database, the page image and the word colouring to download.
+  for (var i = 0; i < 90; i++) {
+    await tester.pump(const Duration(seconds: 1));
+    final loaded =
+        model.status == LoadStatus.ready &&
+        tester.widgetList<RawImage>(find.byType(RawImage)).any((r) => r.image != null) &&
+        model.words.allahWords.containsKey(17);
+    if (loaded) break;
+  }
+  await tester.pump(const Duration(seconds: 2));
+  debugPrint(
+    'DEVICE CHECK status=${model.status} page=${model.page} '
+    'images=${tester.widgetList<RawImage>(find.byType(RawImage)).where((r) => r.image != null).length} '
+    'allahWords=${model.words.allahWords[17]?.length}',
+  );
+  expect(tester.widgetList<RawImage>(find.byType(RawImage)).any((r) => r.image != null), isTrue);
 }
