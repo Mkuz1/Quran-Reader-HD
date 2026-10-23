@@ -2,6 +2,10 @@
 
 Quran Reader HD: the Madani mushaf with verse-by-verse recitation, translations, tafsir, notes, bookmarks and search, in English, French and Arabic — now for **macOS, Windows and Android**.
 
+### New in 1.3
+- **Full-screen reading** (Windows and Android): the page fills the screen, with no title bar, player or system bars. Tap the page to show the controls over it; they hide again after a few seconds, and recitation carries on underneath. Long-press an ayah for its menu, double-tap to recite. Back or Esc leaves full screen (F11 on Windows); it is remembered for next time.
+- **Continue where you stopped** (all platforms): the app remembers the page and the ayah you last selected or listened to. The opening page offers *Continue Reading* (showing the surah, page and ayah), *Continue Listening* if you were listening, or *Start from the Beginning*.
+
 ### Fixed in 1.2.2
 - **Android and Windows**: mushaf pages showed as a plain grey box. Drawing the name of Allah in red failed once its word positions had downloaded, so the page didn't appear at all. Every release is now also tested on an Android emulator before it's published.
 - **Small phones**: the opening page's gold ornaments no longer overflow.

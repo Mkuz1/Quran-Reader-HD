@@ -194,4 +194,11 @@ const Map<String, (String, String)> stringsTable = {
   'Copy Image': ('Copier l\'image', 'نسخ الصورة'),
   'Update Available': ('Mise à jour disponible', 'يتوفر تحديث'),
   'Translation on the card': ('Traduction sur la carte', 'الترجمة على البطاقة'),
+
+  // Full screen and continue reading
+  'Full Screen': ('Plein écran', 'ملء الشاشة'),
+  'Exit Full Screen': ('Quitter le plein écran', 'الخروج من ملء الشاشة'),
+  'Continue Listening': ('Continuer l\'écoute', 'متابعة الاستماع'),
+  'Start from the Beginning': ('Commencer depuis le début', 'البدء من البداية'),
+  'Tap the page to show the controls.': ('Touchez la page pour afficher les commandes.', 'انقر على الصفحة لإظهار أدوات التحكم.'),
 };

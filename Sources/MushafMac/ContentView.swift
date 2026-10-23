@@ -63,7 +63,10 @@ struct ContentView: View {
         // so the toolbar stays and only its items are left out while the opening page shows.
         .toolbar { if !model.showDedication { toolbar } }
         .onChange(of: model.audio.current) { _, key in
-            if let key { model.go(to: key, select: false) }
+            if let key {
+                model.go(to: key, select: false)
+                model.remember(key, listening: true)
+            }
         }
         .onOpenURL { model.handle($0) }
         .sheet(isPresented: Binding(get: { model.showHelp }, set: { model.showHelp = $0 })) { HelpView().appLayoutDirection() }
@@ -75,13 +78,9 @@ struct ContentView: View {
         .onChange(of: model.tafsirID) { _, id in Task { await model.text.ensure(id, sura: model.selected?.sura) } }
 
             if model.showDedication {
-                DedicationView {
-                    withAnimation(.easeInOut(duration: 0.5)) { model.showDedication = false }
-                    // First run: offer to install the pages (they are not shipped in the app).
-                    if !model.pageStore.isInstalled, !UserDefaults.standard.bool(forKey: "pagesChoiceMade") {
-                        model.showPagesChoice = true
-                    }
-                }
+                DedicationView(onContinue: { begin(resume: true) },
+                               onListen: { begin(resume: true, listen: true) },
+                               onStartOver: { begin(startOver: true) })
                     .appLayoutDirection()
                     .transition(.opacity)
                     .zIndex(1)
@@ -91,6 +90,17 @@ struct ContentView: View {
         // Right-to-left is applied per pane (.appLayoutDirection()), not here: on the NavigationSplitView root it
         // makes AppKit (macOS 26) loop on split-view minimum sizes and abort.
         .environment(\.locale, Locale(identifier: Localizer.shared.language.rawValue))
+    }
+
+    /// Leaves the opening page where reading stopped (or at the first page), reciting on if asked.
+    private func begin(resume: Bool = false, listen: Bool = false, startOver: Bool = false) {
+        withAnimation(.easeInOut(duration: 0.5)) { model.showDedication = false }
+        if startOver { model.go(to: 1) }
+        if resume { model.resume(listen: listen) }
+        // First run: offer to install the pages (they are not shipped in the app).
+        if !model.pageStore.isInstalled, !UserDefaults.standard.bool(forKey: "pagesChoiceMade") {
+            model.showPagesChoice = true
+        }
     }
 
     @ToolbarContentBuilder

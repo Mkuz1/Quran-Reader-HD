@@ -60,7 +60,9 @@ final class AppModel {
         didSet { UserDefaults.standard.set(dualPage, forKey: "dualPage") }
     }
     var mode: ReadingMode = .mushaf
-    var selected: AyahKey?
+    var selected: AyahKey? {
+        didSet { if let selected { remember(selected, listening: false) } }
+    }
     var hovered: AyahKey?
     var showInspector = false
     var inspectorTab: InspectorTab = .translation
@@ -133,6 +135,40 @@ final class AppModel {
         await text.ensure(Edition.arabic.id)
         await text.ensure(translationID)
         await text.ensure(Edition.arabicSearch.id)
+    }
+
+    // MARK: Where reading stopped
+
+    /// The ayah last selected or recited, kept across launches with the last page, for "continue reading".
+    private(set) var lastAyah: AyahKey? = UserDefaults.standard.string(forKey: "lastAyah").flatMap(AyahKey.init(string:))
+    /// Whether that ayah was being recited, to offer "continue listening".
+    private(set) var lastListening = UserDefaults.standard.bool(forKey: "lastListening")
+
+    func remember(_ key: AyahKey, listening: Bool) {
+        lastAyah = key
+        lastListening = listening
+        UserDefaults.standard.set(key.description, forKey: "lastAyah")
+        UserDefaults.standard.set(listening, forKey: "lastListening")
+    }
+
+    /// The remembered ayah, if it is still on the pages reading stopped at (paging on drops it).
+    var resumeAyah: AyahKey? {
+        guard let key = lastAyah else { return nil }
+        guard let p = db?.page(of: key) else { return key }   // ayah positions not loaded yet: trust it
+        return visiblePages.contains(p) ? key : nil
+    }
+
+    /// Opens the book at the remembered ayah once the ayah positions are loaded, and recites from it when `listen`.
+    func resume(listen: Bool) {
+        Task {
+            while db == nil {
+                if case .failed = status { return }
+                try? await Task.sleep(for: .milliseconds(100))
+            }
+            guard let key = resumeAyah else { return }
+            go(to: key)
+            if listen { audio.play(from: key) }
+        }
     }
 
     // MARK: Navigation

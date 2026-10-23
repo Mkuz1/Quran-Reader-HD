@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -47,15 +49,89 @@ class AppModel extends ChangeNotifier {
     brightness = prefs.getDouble('brightness') ?? 1;
     swipeEnabled = prefs.getBool('swipe') ?? true;
     studyDisplay = StudyDisplay.values.asNameMap()[prefs.getString('study')] ?? StudyDisplay.both;
-    // Recitation turns the pages: follow the ayah being recited.
+    fullScreen = prefs.getBool('fullScreen') ?? false;
+    lastAyah = AyahKey.parse(prefs.getString('lastAyah') ?? '');
+    lastListening = prefs.getBool('lastListening') ?? false;
+    // Recitation turns the pages: follow the ayah being recited, and remember it as where reading stopped.
     audio.addListener(() {
       final c = audio.current;
-      if (c != null && c != _followed) goToAyah(c, select: false);
+      if (c != null && c != _followed) {
+        goToAyah(c, select: false);
+        _remember(c, listening: true);
+      }
       _followed = c;
     });
   }
 
   AyahKey? _followed;
+
+  // MARK: Where reading stopped
+
+  /// The ayah last recited or selected, kept across launches with the last page, for "continue reading".
+  AyahKey? lastAyah;
+
+  /// Whether that ayah was being recited, to offer "continue listening".
+  bool lastListening = false;
+
+  void _remember(AyahKey key, {required bool listening}) {
+    lastAyah = key;
+    lastListening = listening;
+    prefs
+      ..setString('lastAyah', '$key')
+      ..setBool('lastListening', listening);
+  }
+
+  /// The remembered ayah, if it is still on the page reading stopped at (paging on drops it).
+  AyahKey? get resumeAyah {
+    final key = lastAyah, db = this.db;
+    if (key == null) return null;
+    final pg = db?.page(key);
+    if (pg == null) return key; // ayah positions not loaded yet: trust it
+    return visiblePages().contains(pg) || pg == _page ? key : null;
+  }
+
+  /// Opens the book where reading stopped, at the remembered ayah, and recites from it when [listen].
+  Future<void> resume({required bool listen}) async {
+    await ready;
+    final key = resumeAyah;
+    if (key == null) return;
+    goToAyah(key);
+    if (listen) audio.play(key);
+  }
+
+  final _ready = Completer<void>();
+
+  /// Completes once the ayah database is open.
+  Future<void> get ready => _ready.future;
+
+  // MARK: Full screen
+
+  /// The page fills the screen: no app bar, no player and (on phones) no system bars. A tap on the page shows
+  /// the controls over it for a few seconds.
+  late bool fullScreen;
+
+  /// Controls shown over the page in full screen.
+  bool controlsVisible = false;
+
+  void setFullScreen(bool on) {
+    fullScreen = on;
+    controlsVisible = false;
+    prefs.setBool('fullScreen', on);
+    applySystemBars();
+    notifyListeners();
+  }
+
+  /// Hides the status and navigation bars in full screen (Android); swiping from an edge shows them briefly.
+  void applySystemBars() {
+    if (!Platform.isAndroid) return;
+    SystemChrome.setEnabledSystemUIMode(fullScreen ? SystemUiMode.immersiveSticky : SystemUiMode.edgeToEdge);
+  }
+
+  void showControls(bool visible) {
+    if (controlsVisible == visible) return;
+    controlsVisible = visible;
+    notifyListeners();
+  }
 
   LoadStatus status = LoadStatus.loading;
   String statusMessage = 'Preparing…';
@@ -132,6 +208,7 @@ class AppModel extends ChangeNotifier {
       db = GlyphDB(dbFile.path);
       audio.db = db;
       status = LoadStatus.ready;
+      if (!_ready.isCompleted) _ready.complete();
     } catch (e) {
       statusMessage = e.toString();
       status = LoadStatus.failed;
@@ -173,7 +250,10 @@ class AppModel extends ChangeNotifier {
   }
 
   void goToAyah(AyahKey key, {bool select = true, bool? dual}) {
-    if (select) selected = key;
+    if (select) {
+      selected = key;
+      _remember(key, listening: false);
+    }
     final pg = db?.page(key);
     if (pg != null && !visiblePages(dual: dual).contains(pg)) {
       goTo(pg);
@@ -184,6 +264,7 @@ class AppModel extends ChangeNotifier {
 
   void select(AyahKey? key) {
     selected = key;
+    if (key != null) _remember(key, listening: false);
     notifyListeners();
   }
 
@@ -266,6 +347,7 @@ class AppModel extends ChangeNotifier {
 
   void showText(InspectorTab tab, AyahKey key) {
     selected = key;
+    _remember(key, listening: false);
     inspectorTab = tab;
     showInspector = true;
     notifyListeners();

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -24,23 +26,45 @@ class Home extends StatefulWidget {
 class _HomeState extends State<Home> {
   final _scaffold = GlobalKey<ScaffoldState>();
   final _focus = FocusNode();
+  Timer? _hideControls;
+  bool _controlsWereVisible = false;
 
   @override
   void initState() {
     super.initState();
     model.bootstrap();
+    model.addListener(_controlsChanged);
     Future<void>.delayed(const Duration(seconds: 3), model.updates.check);
   }
 
   @override
   void dispose() {
+    model.removeListener(_controlsChanged);
+    _hideControls?.cancel();
     _focus.dispose();
     super.dispose();
   }
 
-  void _begin() {
+  /// Controls shown over a full-screen page hide again after a few seconds without a touch.
+  void _controlsChanged() {
+    final visible = model.fullScreen && model.controlsVisible;
+    if (visible && !_controlsWereVisible) _restartHideTimer();
+    if (!visible) _hideControls?.cancel();
+    _controlsWereVisible = visible;
+  }
+
+  void _restartHideTimer() {
+    _hideControls?.cancel();
+    _hideControls = Timer(const Duration(seconds: 5), () => model.showControls(false));
+  }
+
+  void _begin({bool resume = false, bool listen = false, bool fromStart = false}) {
     model.showDedication = false;
     model.update(() {});
+    if (fromStart) model.goTo(1);
+    if (resume) model.resume(listen: listen);
+    // Reopened in full screen: hide the system bars again.
+    if (model.fullScreen) model.applySystemBars();
     // First run: offer to install the pages (they are not shipped in the app).
     if (!model.pageStore.isInstalled && !(model.prefs.getBool('pagesChoiceMade') ?? false)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -55,24 +79,150 @@ class _HomeState extends State<Home> {
     return ModelBuilder(
       also: [model.updates],
       builder: (context) {
-        if (model.showDedication) return DedicationView(onContinue: _begin);
+        if (model.showDedication) {
+          return DedicationView(
+            onContinue: () => _begin(resume: true),
+            onListen: () => _begin(resume: true, listen: true),
+            onStartOver: () => _begin(fromStart: true),
+          );
+        }
         return CallbackShortcuts(
           bindings: {
             // Arabic books open right-to-left: the left arrow is the next page.
             const SingleActivator(LogicalKeyboardKey.arrowLeft): () => model.turn(forward: true),
             const SingleActivator(LogicalKeyboardKey.arrowRight): () => model.turn(forward: false),
             const SingleActivator(LogicalKeyboardKey.space): playPause,
-            const SingleActivator(LogicalKeyboardKey.escape): () => model.select(null),
+            const SingleActivator(LogicalKeyboardKey.escape): () =>
+                model.fullScreen ? model.setFullScreen(false) : model.select(null),
+            const SingleActivator(LogicalKeyboardKey.f11): () => model.setFullScreen(!model.fullScreen),
             const SingleActivator(LogicalKeyboardKey.keyB, control: true): () =>
                 model.library.toggleBookmark(model.page, title: model.pageTitle(model.page)),
           },
           child: Focus(
             focusNode: _focus,
             autofocus: true,
-            child: _scaffoldFor(context),
+            // Back leaves full screen before it leaves the app.
+            child: PopScope(
+              canPop: !model.fullScreen,
+              onPopInvokedWithResult: (didPop, _) {
+                if (!didPop) model.setFullScreen(false);
+              },
+              child: _immersive ? _fullScreen(context) : _scaffoldFor(context),
+            ),
           ),
         );
       },
+    );
+  }
+
+  void _enterFullScreen(BuildContext context) {
+    model.setFullScreen(true);
+    toast(context, tr('Tap the page to show the controls.'));
+  }
+
+  bool get _immersive => model.fullScreen && model.mode == ReadingMode.mushaf && model.status == LoadStatus.ready;
+
+  /// Full screen: the page alone, edge to edge. A tap shows the title bar and the player over the page (it
+  /// doesn't move), and they hide again after a few seconds; recitation carries on underneath.
+  Widget _fullScreen(BuildContext context) {
+    final mq = MediaQuery.of(context);
+    final compact = mq.size.width < 600;
+    final shown = model.controlsVisible;
+    final page = model.page;
+    final scheme = Theme.of(context).colorScheme;
+    void closeInspector() {
+      model.showInspector = false;
+      model.update(() {});
+    }
+
+    Widget overlay(Widget child, {required bool top}) => IgnorePointer(
+          ignoring: !shown,
+          child: AnimatedSlide(
+            offset: shown ? Offset.zero : Offset(0, top ? -1 : 1),
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOut,
+            child: AnimatedOpacity(
+              opacity: shown ? 1 : 0,
+              duration: const Duration(milliseconds: 220),
+              child: Listener(onPointerDown: (_) => _restartHideTimer(), child: child),
+            ),
+          ),
+        );
+
+    return Scaffold(
+      body: Stack(children: [
+        // Taps beside the page (the desk) toggle the controls too.
+        Positioned.fill(
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => model.showControls(!shown),
+            child: MushafReader(fold: verticalFold(mq), edgeToEdge: true),
+          ),
+        ),
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          child: overlay(
+            top: true,
+            Material(
+              color: scheme.surface.withValues(alpha: 0.92),
+              elevation: 2,
+              child: SafeArea(
+                bottom: false,
+                child: SizedBox(
+                  height: kToolbarHeight,
+                  child: Row(children: [
+                    IconButton(
+                      onPressed: () => model.setFullScreen(false),
+                      icon: const Icon(Icons.fullscreen_exit),
+                      tooltip: tr('Exit Full Screen'),
+                    ),
+                    Expanded(child: _title(context, page, compact)),
+                    IconButton(
+                      onPressed: () => model.library.toggleBookmark(page, title: model.pageTitle(page)),
+                      icon: Icon(model.library.isBookmarked(page) ? Icons.bookmark : Icons.bookmark_border),
+                      tooltip: tr('Bookmark this page'),
+                    ),
+                    IconButton(
+                      onPressed: () {
+                        model.showInspector = !model.showInspector;
+                        model.update(() {});
+                      },
+                      icon: const Icon(Icons.vertical_split_outlined),
+                      tooltip: tr('Translation, tafsir and notes'),
+                    ),
+                  ]),
+                ),
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          left: 10,
+          right: 10,
+          bottom: 10 + mq.padding.bottom,
+          child: overlay(
+            top: false,
+            Center(
+              child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 980), child: Dock(compact: compact)),
+            ),
+          ),
+        ),
+        if (model.showInspector)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: mq.size.height * 0.5,
+            child: Material(
+              elevation: 12,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              clipBehavior: Clip.antiAlias,
+              child: SafeArea(top: false, child: AyahInspector(onClose: closeInspector)),
+            ),
+          ),
+      ]),
     );
   }
 
@@ -256,6 +406,12 @@ class _HomeState extends State<Home> {
             icon: Icon(model.showInspector ? Icons.vertical_split : Icons.vertical_split_outlined),
             tooltip: tr('Translation, tafsir and notes'),
           ),
+          if (model.mode == ReadingMode.mushaf)
+            IconButton(
+              onPressed: () => _enterFullScreen(context),
+              icon: const Icon(Icons.fullscreen),
+              tooltip: tr('Full Screen'),
+            ),
         ],
         IconButton(
           onPressed: () => showSettings(context),
@@ -311,6 +467,15 @@ class _HomeState extends State<Home> {
                 contentPadding: EdgeInsets.zero,
                 leading: Icon(model.mode == ReadingMode.mushaf ? Icons.notes : Icons.menu_book),
                 title: Text(tr(model.mode == ReadingMode.mushaf ? 'Translation & Tafsir' : 'Mushaf')),
+              ),
+            ),
+          if (ready && model.mode == ReadingMode.mushaf)
+            PopupMenuItem(
+              value: () => _enterFullScreen(context),
+              child: ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.fullscreen),
+                title: Text(tr('Full Screen')),
               ),
             ),
           PopupMenuItem(

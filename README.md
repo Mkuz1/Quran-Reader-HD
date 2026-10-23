@@ -84,6 +84,10 @@ version has to replace the old one by uninstalling it first.
   optional translation and the app's name, in emerald or parchment, exported at 1080 px to share, copy or save.
 - **Export**: notes & bookmarks as HTML or JSON, or emailed as plain text through your default mail app (a `mailto:` link, so Outlook works too).
 - **Display**: brightness control, swipe-to-turn on/off, and Classic, Coloured or Night pages.
+- **Full screen** (Windows/Android): the page alone, edge to edge; a tap shows the title bar and player over it
+  for a few seconds. On macOS, the window's own full screen.
+- **Continue reading**: the last page and the last selected or recited ayah are remembered; the opening page
+  offers to continue reading or listening there, or to start from the beginning.
 - **Help sheet** (⌘?) and **deep links**: `mushaf://ayah/2/255`, `mushaf://page/50`, `mushaf://surah/18`.
 
 The **Coloured** theme imitates the original's colour mushaf on the open page images: parchment, a
