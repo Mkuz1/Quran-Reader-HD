@@ -2,7 +2,12 @@
 
 Quran Reader HD: the Madani mushaf with verse-by-verse recitation, translations, tafsir, notes, bookmarks and search, in English, French and Arabic — now for **macOS, Windows and Android**.
 
-### What's new in {{VERSION}}
+### Fixed in 1.2.1
+- **Android**: mushaf pages showed as a plain grey block on some phones. Pages are now decoded at the size they're shown and drawn sharply.
+- **Phones**: the top bar keeps room for the surah name (page, juz' and hizb are underneath); reading mode and settings moved into the ⋮ menu.
+- **Phones**: the recitation options fit the screen, with each label above its choice.
+
+### New in 1.2
 - **Windows and Android apps** with the same features as the Mac app. On foldable phones, unfold to read a two-page spread across the hinge, or the page on one side and its tafsir on the other.
 - **Share an ayah as an image**: a card with the full Uthmani text and tashkeel, the surah, an optional translation and the app's name, in emerald or parchment. Right-click (or long-press) an ayah → *Share as Image…*
 - **20 more reciters** (26 in all), including As-Sudais, Ash-Shuraim, Al-Muaiqly, Al-Ghamdi, Ash-Shatri, Al-Hudhaify, Ayyub, Jibreel, Al-Qatami, Ad-Dossari and Al-Ajmi.
