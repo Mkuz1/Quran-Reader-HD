@@ -48,6 +48,7 @@ final class AppModel {
     let audio = AudioController()
     let images = PageImages()
     let words = PageWords()
+    let updates = UpdateChecker()
 
     /// Always set through go(to:), which clamps (re-assigning inside didSet recurses under @Observable).
     var page: Int = 1 {
@@ -87,6 +88,8 @@ final class AppModel {
         didSet { UserDefaults.standard.set(studyDisplay.rawValue, forKey: "study") }
     }
     var showHelp = false
+    /// The ayah whose share card is open.
+    var shareCardKey: AyahKey?
     /// The Sadaqa Jariyah opening page, shown at every launch and from the Help menu.
     var showDedication = true
 

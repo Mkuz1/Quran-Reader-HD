@@ -20,13 +20,34 @@ final class AudioController {
         var localizedName: String { Localizer.shared.language == .arabic ? arabicName : name }
     }
 
+    /// EveryAyah folders of one MP3 per ayah. Keep in sync with flutter_app/lib/audio/reciters.dart; CI checks each one.
     static let reciters = [
         Reciter(id: "Abdul_Basit_Murattal_192kbps", name: "Abdul Basit — Murattal", arabicName: "عبد الباسط عبد الصمد — مرتل"),
         Reciter(id: "Abdul_Basit_Mujawwad_128kbps", name: "Abdul Basit — Mujawwad", arabicName: "عبد الباسط عبد الصمد — مجود"),
         Reciter(id: "Husary_128kbps", name: "Mahmoud Khalil Al-Husary", arabicName: "محمود خليل الحصري"),
+        Reciter(id: "Husary_Mujawwad_64kbps", name: "Al-Husary — Mujawwad", arabicName: "محمود خليل الحصري — مجود"),
+        Reciter(id: "Husary_Muallim_128kbps", name: "Al-Husary — Muallim (teaching)", arabicName: "محمود خليل الحصري — المعلم"),
         Reciter(id: "Minshawy_Murattal_128kbps", name: "Al-Minshawi — Murattal", arabicName: "محمد صديق المنشاوي — مرتل"),
+        Reciter(id: "Minshawy_Mujawwad_192kbps", name: "Al-Minshawi — Mujawwad", arabicName: "محمد صديق المنشاوي — مجود"),
         Reciter(id: "Alafasy_128kbps", name: "Mishary Alafasy", arabicName: "مشاري راشد العفاسي"),
         Reciter(id: "Salaah_AbdulRahman_Bukhatir_128kbps", name: "Salah Bukhatir", arabicName: "صلاح بو خاطر"),
+        Reciter(id: "Abdurrahmaan_As-Sudais_192kbps", name: "Abdur-Rahman As-Sudais", arabicName: "عبد الرحمن السديس"),
+        Reciter(id: "Saood_ash-Shuraym_128kbps", name: "Saud Ash-Shuraim", arabicName: "سعود الشريم"),
+        Reciter(id: "MaherAlMuaiqly128kbps", name: "Maher Al-Muaiqly", arabicName: "ماهر المعيقلي"),
+        Reciter(id: "Ghamadi_40kbps", name: "Saad Al-Ghamdi", arabicName: "سعد الغامدي"),
+        Reciter(id: "Abu_Bakr_Ash-Shaatree_128kbps", name: "Abu Bakr Ash-Shatri", arabicName: "أبو بكر الشاطري"),
+        Reciter(id: "Hudhaify_128kbps", name: "Ali Al-Hudhaify", arabicName: "علي الحذيفي"),
+        Reciter(id: "Muhammad_Ayyoub_128kbps", name: "Muhammad Ayyub", arabicName: "محمد أيوب"),
+        Reciter(id: "Muhammad_Jibreel_128kbps", name: "Muhammad Jibreel", arabicName: "محمد جبريل"),
+        Reciter(id: "Nasser_Alqatami_128kbps", name: "Nasser Al-Qatami", arabicName: "ناصر القطامي"),
+        Reciter(id: "Yasser_Ad-Dussary_128kbps", name: "Yasser Ad-Dossari", arabicName: "ياسر الدوسري"),
+        Reciter(id: "Hani_Rifai_192kbps", name: "Hani Ar-Rifai", arabicName: "هاني الرفاعي"),
+        Reciter(id: "Ahmed_ibn_Ali_al-Ajamy_128kbps_ketaballah.net", name: "Ahmed Al-Ajmi", arabicName: "أحمد بن علي العجمي"),
+        Reciter(id: "Abdullah_Basfar_192kbps", name: "Abdullah Basfar", arabicName: "عبد الله بصفر"),
+        Reciter(id: "Mohammad_al_Tablaway_128kbps", name: "Muhammad At-Tablawi", arabicName: "محمد الطبلاوي"),
+        Reciter(id: "Fares_Abbad_64kbps", name: "Fares Abbad", arabicName: "فارس عباد"),
+        Reciter(id: "Abdullaah_3awwaad_Al-Juhaynee_128kbps", name: "Abdullah Al-Juhany", arabicName: "عبد الله عواد الجهني"),
+        Reciter(id: "Ali_Jaber_64kbps", name: "Ali Jaber", arabicName: "علي جابر"),
     ]
 
     var reciter: String = UserDefaults.standard.string(forKey: "reciter") ?? reciters[0].id {

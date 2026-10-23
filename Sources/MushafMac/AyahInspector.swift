@@ -44,6 +44,8 @@ struct AyahInspector: View {
                 .help(tr("Recite this ayah"))
             Button { model.copyArabic(key) } label: { Image(systemName: "doc.on.doc") }
                 .help(tr("Copy Arabic text"))
+            Button { model.shareCardKey = key } label: { Image(systemName: "photo") }
+                .help(tr("Share as Image…"))
             ShareLink(item: model.shareText(key), subject: Text(model.citation(key))) { Image(systemName: "square.and.arrow.up") }
                 .help(tr("Share this ayah"))
         }

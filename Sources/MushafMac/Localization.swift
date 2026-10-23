@@ -250,5 +250,22 @@ private enum Strings {
 
         // Dedication page
         "Begin Reading": ("Commencer la lecture", "ابدأ القراءة"),
+
+        // Ayah cards and update notifications
+        "Share as Image": ("Partager en image", "مشاركة كصورة"),
+        "Share as Image…": ("Partager en image…", "مشاركة كصورة…"),
+        "Emerald": ("Émeraude", "زمردي"),
+        "Parchment": ("Parchemin", "رقّ"),
+        "Translation on the card": ("Traduction sur la carte", "الترجمة على البطاقة"),
+        "Copy Image": ("Copier l'image", "نسخ الصورة"),
+        "Save Image…": ("Enregistrer l'image…", "حفظ الصورة…"),
+        "Check for Updates…": ("Rechercher des mises à jour…", "التحقق من التحديثات…"),
+        "Quran Reader HD %@ is available. You have %@.": ("Quran Reader HD %@ est disponible. Vous avez la version %@.", "يتوفر Quran Reader HD %@، ولديك الإصدار %@."),
+        "Download Update": ("Télécharger la mise à jour", "تنزيل التحديث"),
+        "Later": ("Plus tard", "لاحقًا"),
+        "Skip This Version": ("Ignorer cette version", "تخطّي هذا الإصدار"),
+        "You have the latest version": ("Vous avez la dernière version", "لديك أحدث إصدار"),
+        "Version %@": ("Version %@", "الإصدار %@"),
+        "Couldn't check for updates": ("Impossible de vérifier les mises à jour", "تعذّر التحقق من التحديثات"),
     ]
 }

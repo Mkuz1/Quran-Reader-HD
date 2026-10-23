@@ -1,35 +1,186 @@
-# Builds QuranReaderHD.dmg on macOS for every pull request, as a compile check. On main, when the version in
-# make-app.sh has no release yet, publishes the DMG as release v<version> with .github/release-notes.md as the
-# notes ({{SHA256}} is replaced by the DMG's checksum).
+# Builds Quran Reader HD for macOS (DMG), Windows (per-user installer and portable zip) and Android (APK).
+# Pull requests build everything as a check. On main, when the version in VERSION has no release yet, the
+# builds are published together as release v<version>, with .github/release-notes.md as the notes
+# ({{VERSION}} and {{SHA256_*}} are filled in).
 name: Release
 
 on:
   pull_request:
   push:
     branches: [main]
-    paths: [make-app.sh, .github/workflows/release.yml, .github/release-notes.md]
+    paths:
+      - VERSION
+      - Package.swift
+      - Sources/**
+      - Assets/**
+      - flutter_app/**
+      - make-app.sh
+      - make-dmg.sh
+      - scripts/**
+      - .github/workflows/release.yml
+      - .github/release-notes.md
 
 permissions:
   contents: write
 
+env:
+  FLUTTER_VERSION: 3.47.7
+
 jobs:
-  dmg:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      semver: ${{ steps.v.outputs.semver }}
+      build: ${{ steps.v.outputs.build }}
+      publish: ${{ steps.v.outputs.publish }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(tr -d '[:space:]' < VERSION)
+          IFS=. read -r major minor patch <<< "$version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "semver=${major:-0}.${minor:-0}.${patch:-0}" >> "$GITHUB_OUTPUT"
+          echo "build=$(( ${major:-0} * 10000 + ${minor:-0} * 100 + ${patch:-0} ))" >> "$GITHUB_OUTPUT"
+          publish=false
+          if [ "$GITHUB_EVENT_NAME" = push ] && ! gh release view "v$version" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            publish=true
+          fi
+          echo "publish=$publish" >> "$GITHUB_OUTPUT"
+
+  sources:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reciters and tafsir sources are online
+        run: scripts/check-sources.sh
+
+  macos:
+    needs: version
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
       - name: Toolchain
         run: xcodebuild -version && swift --version
       - name: Build DMG
-        run: ./make-dmg.sh
+        run: |
+          ./make-dmg.sh
+          mkdir -p dist
+          mv build/QuranReaderHD.dmg "dist/QuranReaderHD-${{ needs.version.outputs.version }}.dmg"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: dist/
+
+  android:
+    needs: version
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: flutter_app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+      - name: Signing key
+        env:
+          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE" ]; then
+            echo "::warning::No ANDROID_KEYSTORE_BASE64 secret: the APK is signed with a throwaway key and can't update an earlier install."
+            exit 0
+          fi
+          echo "$KEYSTORE" | base64 -d > android/app/release.jks
+          printf 'storeFile=release.jks\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' \
+            "$STORE_PASSWORD" "$KEY_ALIAS" "$KEY_PASSWORD" > android/key.properties
+      - name: Build APK
+        run: |
+          flutter build apk --release --build-name=${{ needs.version.outputs.semver }} --build-number=${{ needs.version.outputs.build }}
+          mkdir -p ../dist
+          cp build/app/outputs/flutter-apk/app-release.apk "../dist/QuranReaderHD-${{ needs.version.outputs.version }}.apk"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android
+          path: dist/
+
+  windows:
+    needs: version
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: flutter_app
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Build
+        run: flutter build windows --release --build-name=${{ needs.version.outputs.semver }} --build-number=${{ needs.version.outputs.build }}
+      - name: Installer and portable zip
+        run: |
+          $release = "build\windows\x64\runner\Release"
+          # The Visual C++ runtime next to the exe, so the app runs on PCs without it installed.
+          foreach ($dll in 'msvcp140.dll', 'vcruntime140.dll', 'vcruntime140_1.dll') {
+            Copy-Item "$env:WINDIR\System32\$dll" $release
+          }
+          $version = "${{ needs.version.outputs.version }}"
+          New-Item -ItemType Directory -Force ..\dist | Out-Null
+          Compress-Archive -Path "$release\*" -DestinationPath "..\dist\QuranReaderHD-$version-Windows-Portable.zip"
+          $iscc = Get-Command iscc -ErrorAction SilentlyContinue
+          if (-not $iscc) {
+            choco install innosetup -y --no-progress | Out-Null
+            $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          } else { $iscc = $iscc.Source }
+          & $iscc "/DAppVersion=$version" "/DSourceDir=$((Resolve-Path $release).Path)" "/DOutputDir=$((Resolve-Path ..\dist).Path)" windows\installer.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Get-ChildItem ..\dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: dist/
+
+  publish:
+    needs: [version, sources, macos, android, windows]
+    if: needs.version.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
       - name: Publish release
-        if: github.event_name == 'push'
         env:
           GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.version.outputs.version }}
         run: |
-          version=$(sed -n 's|.*<key>CFBundleShortVersionString</key><string>\([^<]*\)</string>.*|\1|p' make-app.sh)
-          tag="v$version"
-          if gh release view "$tag" >/dev/null 2>&1; then echo "$tag is already released"; exit 0; fi
-          sha=$(shasum -a 256 build/QuranReaderHD.dmg | cut -d' ' -f1)
-          sed "s/{{SHA256}}/$sha/" .github/release-notes.md > "$RUNNER_TEMP/notes.md"
-          gh release create "$tag" build/QuranReaderHD.dmg --target "$GITHUB_SHA" \
-            --title "Quran Reader HD $version" --notes-file "$RUNNER_TEMP/notes.md"
+          ls -la dist
+          sha() { sha256sum "$1" | cut -d' ' -f1; }
+          sed -e "s/{{VERSION}}/$VERSION/g" \
+              -e "s/{{SHA256_DMG}}/$(sha dist/QuranReaderHD-$VERSION.dmg)/" \
+              -e "s/{{SHA256_SETUP}}/$(sha dist/QuranReaderHD-$VERSION-Setup.exe)/" \
+              -e "s/{{SHA256_ZIP}}/$(sha dist/QuranReaderHD-$VERSION-Windows-Portable.zip)/" \
+              -e "s/{{SHA256_APK}}/$(sha dist/QuranReaderHD-$VERSION.apk)/" \
+              .github/release-notes.md > "$RUNNER_TEMP/notes.md"
+          gh release create "v$VERSION" dist/* --target "$GITHUB_SHA" \
+            --title "Quran Reader HD $VERSION" --notes-file "$RUNNER_TEMP/notes.md"

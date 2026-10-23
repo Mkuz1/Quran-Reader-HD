@@ -45,6 +45,11 @@ struct ContentView: View {
             }
             // Keeps the reading area (and its glass dock) from being squeezed below what the dock needs.
             .frame(minWidth: 460)
+            .overlay(alignment: .top) {
+                if let update = model.updates.available, !model.showDedication {
+                    UpdateBanner(update: update).appLayoutDirection().padding(.top, 10)
+                }
+            }
             .inspector(isPresented: $model.showInspector) {
                 AyahInspector()
                     .appLayoutDirection()
@@ -63,6 +68,9 @@ struct ContentView: View {
         .onOpenURL { model.handle($0) }
         .sheet(isPresented: Binding(get: { model.showHelp }, set: { model.showHelp = $0 })) { HelpView().appLayoutDirection() }
         .sheet(isPresented: Binding(get: { model.showPagesChoice }, set: { model.showPagesChoice = $0 })) { PagesChoiceView() }
+        .sheet(isPresented: Binding(get: { model.shareCardKey != nil }, set: { if !$0 { model.shareCardKey = nil } })) {
+            if let key = model.shareCardKey { ShareCardSheet(key: key).appLayoutDirection() }
+        }
         .onChange(of: model.translationID) { _, id in Task { await model.text.ensure(id) } }
         .onChange(of: model.tafsirID) { _, id in Task { await model.text.ensure(id, sura: model.selected?.sura) } }
 
@@ -168,6 +176,8 @@ struct AyahMenu: View {
         Button(tr("Copy Arabic Text")) { model.copyArabic(key) }
             .disabled(model.text.text(Edition.arabic.id, key) == nil)
         Button(tr("Copy with Translation")) { model.copyWithTranslation(key) }
+            .disabled(model.text.text(Edition.arabic.id, key) == nil)
+        Button(tr("Share as Image…")) { model.shareCardKey = key }
             .disabled(model.text.text(Edition.arabic.id, key) == nil)
         ShareLink(tr("Share…"), item: model.shareText(key), subject: Text(model.citation(key)))
         if let page = model.db?.page(of: key) {
@@ -323,5 +333,29 @@ struct HelpView: View {
         }
         .padding(24)
         .frame(width: 520)
+    }
+}
+
+/// "Quran Reader HD 1.3 is available": download the new DMG, dismiss for now, or skip that version.
+private struct UpdateBanner: View {
+    @Environment(AppModel.self) private var model
+    let update: UpdateChecker.Update
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "arrow.down.app").font(.title3).foregroundStyle(Color.appAccent)
+            Text(tr("Quran Reader HD %@ is available. You have %@.", update.version, UpdateChecker.currentVersion ?? ""))
+                .lineLimit(2)
+            Spacer(minLength: 8)
+            Button(tr("Skip This Version")) { model.updates.skip() }
+            Button(tr("Later")) { model.updates.dismiss() }
+            Button(tr("Download Update")) { model.updates.download() }
+                .buttonStyle(.glassProminent)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .frame(maxWidth: 720)
+        .glassEffect(.regular, in: Capsule())
+        .padding(.horizontal, 20)
     }
 }
