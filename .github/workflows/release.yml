@@ -1,0 +1,28 @@
+# Pushing a tag like v1.1 builds QuranReaderHD.dmg on macOS and publishes it as that tag's release,
+# with .github/release-notes.md as the notes ({{SHA256}} is replaced by the DMG's checksum).
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  dmg:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - name: Toolchain
+        run: xcodebuild -version && swift --version
+      - name: Build DMG
+        run: ./make-dmg.sh
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          sha=$(shasum -a 256 build/QuranReaderHD.dmg | cut -d' ' -f1)
+          sed "s/{{SHA256}}/$sha/" .github/release-notes.md > "$RUNNER_TEMP/notes.md"
+          gh release create "$TAG" build/QuranReaderHD.dmg --title "Quran Reader HD ${TAG#v}" --notes-file "$RUNNER_TEMP/notes.md"
