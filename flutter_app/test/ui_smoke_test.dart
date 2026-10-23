@@ -10,7 +10,10 @@ import 'package:quran_reader_hd/app_model.dart';
 import 'package:quran_reader_hd/core/l10n.dart';
 import 'package:quran_reader_hd/core/quran.dart';
 import 'package:quran_reader_hd/core/storage.dart';
+import 'package:quran_reader_hd/data/meta.dart';
 import 'package:quran_reader_hd/main.dart';
+import 'package:quran_reader_hd/ui/dock.dart';
+import 'package:quran_reader_hd/ui/home.dart';
 import 'package:quran_reader_hd/ui/page_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -27,7 +30,7 @@ Future<void> _font(String family, List<String> files) async {
 }
 
 /// Roboto and the icon font from the Flutter SDK, so screenshots show real text instead of test boxes.
-Future<void> _sdkFonts() async {
+Future<void> _sdkFonts({bool roboto = true}) async {
   final dir = Directory('${Platform.environment['FLUTTER_ROOT']}/bin/cache/artifacts/material_fonts');
   if (!dir.existsSync()) return;
   Future<void> load(String family, bool Function(String) match) async {
@@ -38,7 +41,7 @@ Future<void> _sdkFonts() async {
     await loader.load();
   }
 
-  await load('Roboto', (n) => n.startsWith('Roboto-'));
+  if (roboto) await load('Roboto', (n) => n.startsWith('Roboto-'));
   await load('MaterialIcons', (n) => n.startsWith('MaterialIcons'));
 }
 
@@ -54,16 +57,32 @@ void main() {
     }
   });
 
-  Future<void> pumpHome(WidgetTester tester, Size size, {List<ui.DisplayFeature> features = const []}) async {
+  Future<void> pumpHome(WidgetTester tester, Size size,
+      {List<ui.DisplayFeature> features = const [], String language = 'en', bool dark = false, bool meta = false}) async {
     SharedPreferences.setMockInitialValues({'pagesChoiceMade': true, 'lastPage': 1});
     final prefs = await SharedPreferences.getInstance();
-    Localizer.init(prefs, const Locale('en'));
+    Localizer.init(prefs, Locale(language));
+    tester.platformDispatcher.platformBrightnessTestValue = dark ? Brightness.dark : Brightness.light;
+    addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
     model = AppModel(prefs)..showDedication = false;
+    // Offline there is no surah list; a short one with real names where the layout depends on them.
+    if (meta) {
+      model.meta = QuranMeta([
+        Surah.fromJson({
+          'number': 1, 'name': 'سُورَةُ ٱلْفَاتِحَةِ', 'englishName': 'Al-Faatiha', 'englishNameTranslation': 'The Opening',
+          'numberOfAyahs': 7, 'revelationType': 'Meccan',
+        }),
+        Surah.fromJson({
+          'number': 2, 'name': 'سُورَةُ البَقَرَةِ', 'englishName': 'Al-Baqara', 'englishNameTranslation': 'The Cow',
+          'numberOfAyahs': 286, 'revelationType': 'Medinan',
+        }),
+      ], const [], const []);
+    }
     clearPageCache();
     await tester.runAsync(() async {
       await _font('Amiri Quran', ['assets/fonts/AmiriQuran-Regular.ttf']);
       await _font('Amiri', ['assets/fonts/Amiri-Regular.ttf', 'assets/fonts/Amiri-Bold.ttf']);
-      if (out.isNotEmpty) await _sdkFonts();
+      if (out.isNotEmpty) await _sdkFonts(roboto: language != 'ar');
     });
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -113,6 +132,7 @@ void main() {
     await finish(tester);
   });
 
+
   testWidgets('unfolded foldable with a hinge', (tester) async {
     await pumpHome(tester, const Size(1080, 960), features: const [
       ui.DisplayFeature(
@@ -132,6 +152,24 @@ void main() {
     model.select(const AyahKey(2, 3));
     await tester.pump();
     await shot(tester, 'desktop');
+    await finish(tester);
+  });
+
+  testWidgets('phone in Arabic and dark mode, with the recitation options', (tester) async {
+    // Interface text in Amiri (wider than Android's own Arabic font), so the fit below is a safe check. Fonts stay
+    // loaded for later tests, so this test runs last.
+    await tester.runAsync(() => _font('Roboto', ['assets/fonts/Amiri-Regular.ttf', 'assets/fonts/Amiri-Bold.ttf']));
+    await pumpHome(tester, const Size(343, 760), language: 'ar', dark: true, meta: true);
+    // The surah's full Arabic name fits beside the bar's actions.
+    final title = tester.renderObject<RenderParagraph>(find.text('سُورَةُ ٱلْفَاتِحَةِ'));
+    expect(title.didExceedMaxLines, isFalse);
+    await shot(tester, 'phone-ar');
+    showAudioOptions(tester.element(find.byType(Home)));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    await shot(tester, 'phone-ar-recitation');
+    await tester.tap(find.text(tr('Done')));
+    await tester.pumpAndSettle();
     await finish(tester);
   });
 }

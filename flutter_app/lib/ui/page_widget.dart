@@ -85,9 +85,14 @@ class _MushafPageState extends State<MushafPage> {
     final coloured = model.theme == PageTheme.coloured;
     if (coloured) model.words.ensure(page, _glyphCounts());
     final dark = invertsInk(context);
-    Widget image(Color? tint) => Image.file(file,
+    final pixelRatio = MediaQuery.devicePixelRatioOf(context);
+    // Decoded at the size it is shown (in steps, so small resizes reuse it) and drawn without mipmaps:
+    // on Android's GPU renderer, mipmapped sampling of these palette PNGs (transparent paper, black ink)
+    // averaged the page into a flat grey.
+    Widget image(Color? tint, double width) => Image.file(file,
+        cacheWidth: ((width * pixelRatio / 128).ceil() * 128).clamp(128, Quran.pageWidth.toInt()),
         fit: BoxFit.fill,
-        filterQuality: FilterQuality.medium,
+        filterQuality: FilterQuality.low,
         gaplessPlayback: true,
         color: tint,
         colorBlendMode: tint == null ? null : BlendMode.srcIn);
@@ -98,9 +103,9 @@ class _MushafPageState extends State<MushafPage> {
         final scale = c.maxWidth / Quran.pageWidth;
         final refs = coloured ? model.words.allahWords[page] : null;
         return Stack(fit: StackFit.expand, children: [
-          image(dark ? Colors.white.withValues(alpha: 0.9) : null),
+          image(dark ? Colors.white.withValues(alpha: 0.9) : null, c.maxWidth),
           if (refs != null && refs.isNotEmpty)
-            ClipPath(clipper: _RectsClipper(_allahRects(refs), scale), child: image(AppColors.allahRed)),
+            ClipPath(clipper: _RectsClipper(_allahRects(refs), scale), child: image(AppColors.allahRed, c.maxWidth)),
           CustomPaint(painter: _HighlightPainter(page, scale, _hovered)),
           _gestures(context, scale),
           ..._noteTabs(scale, c.maxWidth),

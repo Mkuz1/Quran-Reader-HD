@@ -217,14 +217,8 @@ class _HomeState extends State<Home> {
     final marked = model.library.isBookmarked(page);
     return AppBar(
       titleSpacing: sidebarInDrawer ? 0 : 16,
-      title: ready
-          ? Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(model.pageTitle(page), maxLines: 1, overflow: TextOverflow.ellipsis),
-              Text("${tr("Juz' %d", [model.juzFor(page)])} · ${AppModel.quarterLabel(model.quarterIndex(page))}",
-                  style: Theme.of(context).textTheme.bodySmall),
-            ])
-          : Text(tr('Mushaf')),
-      actions: [
+      title: ready ? _title(context, page, compact) : Text(tr('Mushaf')),
+      actions: compact ? _compactActions(context, ready: ready, marked: marked) : [
         if (ready) ...[
           // Book order whatever the UI language: "next" sits on the left.
           Directionality(
@@ -270,6 +264,67 @@ class _HomeState extends State<Home> {
         ),
       ],
     );
+  }
+
+  /// "2. Al-Baqara · Page 17" over "Juz' 1 · ¼ Hizb 2"; on phones the surah alone over "Page 17 · Juz' 1 · …".
+  Widget _title(BuildContext context, int page, bool compact) {
+    final first = model.firstAyah(page);
+    final position = "${tr("Juz' %d", [model.juzFor(page)])} · ${AppModel.quarterLabel(model.quarterIndex(page))}";
+    final (title, subtitle) = compact
+        ? (first == null ? tr('Page %d', [page]) : model.surahName(first.sura), '${tr('Page %d', [page])} · $position')
+        : (model.pageTitle(page), position);
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: compact ? const TextStyle(fontSize: 18) : null),
+      Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.bodySmall),
+    ]);
+  }
+
+  /// Phones: the title needs the room, so only bookmark and the inspector stay in the bar (pages turn by
+  /// swiping); the reading mode and settings move into a menu.
+  List<Widget> _compactActions(BuildContext context, {required bool ready, required bool marked}) {
+    final page = model.page;
+    return [
+      if (ready) ...[
+        IconButton(
+          onPressed: () => model.library.toggleBookmark(page, title: model.pageTitle(page)),
+          icon: Icon(marked ? Icons.bookmark : Icons.bookmark_border),
+          tooltip: tr('Bookmark this page'),
+        ),
+        IconButton(
+          onPressed: () {
+            model.showInspector = !model.showInspector;
+            model.update(() {});
+          },
+          icon: Icon(model.showInspector ? Icons.vertical_split : Icons.vertical_split_outlined),
+          tooltip: tr('Translation, tafsir and notes'),
+        ),
+      ],
+      PopupMenuButton<VoidCallback>(
+        icon: Badge(isLabelVisible: model.updates.available != null, child: const Icon(Icons.more_vert)),
+        onSelected: (action) => action(),
+        itemBuilder: (context) => [
+          if (ready)
+            PopupMenuItem(
+              value: () => model.update(
+                  () => model.mode = model.mode == ReadingMode.mushaf ? ReadingMode.text : ReadingMode.mushaf),
+              child: ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(model.mode == ReadingMode.mushaf ? Icons.notes : Icons.menu_book),
+                title: Text(tr(model.mode == ReadingMode.mushaf ? 'Translation & Tafsir' : 'Mushaf')),
+              ),
+            ),
+          PopupMenuItem(
+            value: () => showSettings(context),
+            child: ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Badge(
+                  isLabelVisible: model.updates.available != null, child: const Icon(Icons.settings_outlined)),
+              title: Text(tr('Settings')),
+            ),
+          ),
+        ],
+      ),
+    ];
   }
 }
 

@@ -201,23 +201,33 @@ class _AudioOptionsState extends State<_AudioOptions> {
   @override
   Widget build(BuildContext context) {
     final audio = model.audio;
+    // Label beside the field when there is room, above it on phones.
     Widget row(String label, Widget field) => Padding(
           padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Row(children: [
-            SizedBox(width: 150, child: Text(label)),
-            Expanded(child: field),
-          ]),
+          child: LayoutBuilder(
+            builder: (context, c) => c.maxWidth < 400
+                ? Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(label, style: Theme.of(context).textTheme.labelLarge),
+                    field,
+                  ])
+                : Row(children: [
+                    SizedBox(width: 150, child: Text(label)),
+                    Expanded(child: field),
+                  ]),
+          ),
         );
+    Widget one(String text) => Text(text, maxLines: 1, softWrap: false, overflow: TextOverflow.ellipsis);
     DropdownButton<int> repeats(int value, ValueChanged<int> onChanged) => DropdownButton<int>(
           value: value,
           isExpanded: true,
           items: [
             for (final n in AudioController.repeatChoices)
-              DropdownMenuItem(value: n, child: Text(AudioController.repeatLabel(n)))
+              DropdownMenuItem(value: n, child: one(AudioController.repeatLabel(n)))
           ],
           onChanged: (v) => setState(() => onChanged(v!)),
         );
     return AlertDialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 24),
       title: Text(tr('Recitation')),
       content: SizedBox(
         width: 460,
@@ -232,7 +242,7 @@ class _AudioOptionsState extends State<_AudioOptions> {
                   isExpanded: true,
                   items: [
                     for (final r in reciters)
-                      DropdownMenuItem(value: r.id, child: Text(r.localizedName, overflow: TextOverflow.ellipsis))
+                      DropdownMenuItem(value: r.id, child: one(r.localizedName))
                   ],
                   onChanged: (v) => audio.reciter = v!,
                 ),
@@ -242,7 +252,7 @@ class _AudioOptionsState extends State<_AudioOptions> {
                 DropdownButton<PlayScope>(
                   value: audio.scope,
                   isExpanded: true,
-                  items: [for (final s in PlayScope.values) DropdownMenuItem(value: s, child: Text(tr(s.label)))],
+                  items: [for (final s in PlayScope.values) DropdownMenuItem(value: s, child: one(tr(s.label)))],
                   onChanged: (v) => setState(() => audio.scope = v!),
                 ),
               ),
@@ -297,8 +307,8 @@ class AyahPicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final count = model.db?.ayahCounts[value.sura] ?? 1;
-    return Row(children: [
-      SizedBox(width: 60, child: Text(label)),
+    Widget one(String text) => Text(text, maxLines: 1, softWrap: false, overflow: TextOverflow.ellipsis);
+    final pickers = Row(children: [
       Expanded(
         flex: 3,
         child: DropdownButton<int>(
@@ -306,7 +316,7 @@ class AyahPicker extends StatelessWidget {
           isExpanded: true,
           items: [
             for (var n = 1; n <= 114; n++)
-              DropdownMenuItem(value: n, child: Text(model.surahTitle(n), overflow: TextOverflow.ellipsis))
+              DropdownMenuItem(value: n, child: one(model.surahTitle(n)))
           ],
           onChanged: (n) => onChanged(AyahKey(n!, 1)),
         ),
@@ -319,11 +329,23 @@ class AyahPicker extends StatelessWidget {
           isExpanded: true,
           items: [
             for (var a = 1; a <= (count < 1 ? 1 : count); a++)
-              DropdownMenuItem(value: a, child: Text(tr('Ayah %d', [a])))
+              DropdownMenuItem(value: a, child: one(tr('Ayah %d', [a])))
           ],
           onChanged: (a) => onChanged(AyahKey(value.sura, a!)),
         ),
       ),
     ]);
+    // "From" / "To" beside the pickers when there is room, above them on phones.
+    return LayoutBuilder(
+      builder: (context, c) => c.maxWidth < 400
+          ? Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(label, style: Theme.of(context).textTheme.labelLarge),
+                pickers,
+              ]),
+            )
+          : Row(children: [SizedBox(width: 60, child: Text(label)), Expanded(child: pickers)]),
+    );
   }
 }
