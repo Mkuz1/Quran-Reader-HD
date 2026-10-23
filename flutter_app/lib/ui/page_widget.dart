@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../app_model.dart';
 import '../core/l10n.dart';
 import '../core/quran.dart';
+import '../data/glyph_db.dart';
 import '../data/page_store.dart';
 import '../data/page_words.dart';
 import 'ayah_menu.dart';
@@ -145,7 +146,7 @@ class _MushafPageState extends State<MushafPage> {
   }
 
   List<Rect> _allahRects(Set<WordRef> refs) => [
-        for (final g in model.db?.glyphs(page) ?? const [])
+        for (final g in model.db?.glyphs(page) ?? const <Glyph>[])
           if (refs.contains(WordRef(g.key, g.position))) g.rect.inflate(2),
       ];
 

@@ -37,8 +37,8 @@ void main() {
     expect(compareVersions('1.10', '1.9'), 1);
     expect(compareVersions('v1.2', '1.2.0'), 0);
     final latest = latestRelease([
-      {'tag_name': 'pages-v1', 'draft': false, 'prerelease': false, 'html_url': 'x', 'assets': []},
-      {'tag_name': 'v1.1', 'draft': false, 'prerelease': false, 'html_url': 'https://a/1.1', 'assets': []},
+      {'tag_name': 'pages-v1', 'draft': false, 'prerelease': false, 'html_url': 'x', 'assets': <Map<String, String>>[]},
+      {'tag_name': 'v1.1', 'draft': false, 'prerelease': false, 'html_url': 'https://a/1.1', 'assets': <Map<String, String>>[]},
       {
         'tag_name': 'v1.2', 'draft': false, 'prerelease': false, 'html_url': 'https://a/1.2', 'body': 'n',
         'assets': [
@@ -46,7 +46,7 @@ void main() {
           {'name': 'QuranReaderHD-1.2-Setup.exe', 'browser_download_url': 'https://a/x.exe'},
         ]
       },
-      {'tag_name': 'v9.0', 'draft': true, 'prerelease': false, 'html_url': 'x', 'assets': []},
+      {'tag_name': 'v9.0', 'draft': true, 'prerelease': false, 'html_url': 'x', 'assets': <Map<String, String>>[]},
     ], assetSuffix: '-Setup.exe');
     expect(latest!.version, '1.2');
     expect(latest.download.toString(), 'https://a/x.exe');

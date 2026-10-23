@@ -119,6 +119,40 @@ jobs:
           name: android
           path: dist/
 
+  # The app on an Android emulator, online like a phone: catches what only fails on a device.
+  android-device:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter pub get
+        working-directory: flutter_app
+      - name: Run on an emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          working-directory: flutter_app
+          script: |
+            adb shell cmd uimode night yes
+            flutter test integration_test/app_test.dart -d emulator-5554 --reporter expanded
+
   windows:
     needs: version
     runs-on: windows-latest
@@ -160,7 +194,7 @@ jobs:
           path: dist/
 
   publish:
-    needs: [version, sources, macos, android, windows]
+    needs: [version, sources, macos, android, android-device, windows]
     if: needs.version.outputs.publish == 'true'
     runs-on: ubuntu-latest
     steps:

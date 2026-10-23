@@ -292,18 +292,23 @@ class Ornament extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-        Container(
-            width: 110,
-            height: 1,
-            decoration: BoxDecoration(gradient: LinearGradient(colors: [color.withValues(alpha: 0), color]))),
+        // The rules shrink on narrow screens; the diamond stays.
+        Flexible(
+          child: Container(
+              width: 110,
+              height: 1,
+              decoration: BoxDecoration(gradient: LinearGradient(colors: [color.withValues(alpha: 0), color]))),
+        ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8),
           child: Transform.rotate(angle: math.pi / 4, child: Container(width: 7, height: 7, color: color)),
         ),
-        Container(
-            width: 110,
-            height: 1,
-            decoration: BoxDecoration(gradient: LinearGradient(colors: [color, color.withValues(alpha: 0)]))),
+        Flexible(
+          child: Container(
+              width: 110,
+              height: 1,
+              decoration: BoxDecoration(gradient: LinearGradient(colors: [color, color.withValues(alpha: 0)]))),
+        ),
       ]);
 }
 

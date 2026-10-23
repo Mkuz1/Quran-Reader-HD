@@ -11,6 +11,21 @@ import 'ui/home.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // A part of the screen that fails to build shows what went wrong, not the release build's plain grey box,
+  // so a screenshot is enough to report it.
+  ErrorWidget.builder = (details) => Directionality(
+        textDirection: TextDirection.ltr,
+        child: ColoredBox(
+          color: const Color(0xFFF6EBD0),
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Text('⚠ ${details.exceptionAsString()}',
+                  style: const TextStyle(fontSize: 12, color: Color(0xFF8A1C1C), decoration: TextDecoration.none)),
+            ),
+          ),
+        ),
+      );
   final prefs = await SharedPreferences.getInstance();
   await Paths.init();
   Localizer.init(prefs, PlatformDispatcher.instance.locale);
