@@ -15,14 +15,16 @@ fi
 
 failed=0
 for id in $dart_ids; do
+  ok=1
   for file in 001001 114006; do
     code=$(curl -s -o /dev/null -I -L --retry 3 --retry-delay 2 -w '%{http_code}' "https://everyayah.com/data/$id/$file.mp3")
     if [ "$code" != 200 ]; then
       echo "::error::Reciter $id: $file.mp3 returned HTTP $code"
+      ok=0
       failed=1
     fi
   done
-  echo "ok  $id"
+  [ $ok = 1 ] && echo "ok  $id"
 done
 
 # French tafsir (Al-Mukhtasar): result[] with aya (number or string) and translation, one per ayah.

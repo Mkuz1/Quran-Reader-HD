@@ -25,7 +25,7 @@ final class AudioController {
         Reciter(id: "Abdul_Basit_Murattal_192kbps", name: "Abdul Basit — Murattal", arabicName: "عبد الباسط عبد الصمد — مرتل"),
         Reciter(id: "Abdul_Basit_Mujawwad_128kbps", name: "Abdul Basit — Mujawwad", arabicName: "عبد الباسط عبد الصمد — مجود"),
         Reciter(id: "Husary_128kbps", name: "Mahmoud Khalil Al-Husary", arabicName: "محمود خليل الحصري"),
-        Reciter(id: "Husary_Mujawwad_128kbps", name: "Al-Husary — Mujawwad", arabicName: "محمود خليل الحصري — مجود"),
+        Reciter(id: "Husary_Mujawwad_64kbps", name: "Al-Husary — Mujawwad", arabicName: "محمود خليل الحصري — مجود"),
         Reciter(id: "Husary_Muallim_128kbps", name: "Al-Husary — Muallim (teaching)", arabicName: "محمود خليل الحصري — المعلم"),
         Reciter(id: "Minshawy_Murattal_128kbps", name: "Al-Minshawi — Murattal", arabicName: "محمد صديق المنشاوي — مرتل"),
         Reciter(id: "Minshawy_Mujawwad_192kbps", name: "Al-Minshawi — Mujawwad", arabicName: "محمد صديق المنشاوي — مجود"),

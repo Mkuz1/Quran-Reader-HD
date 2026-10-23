@@ -15,7 +15,7 @@ const reciters = <Reciter>[
   Reciter('Abdul_Basit_Murattal_192kbps', 'Abdul Basit — Murattal', 'عبد الباسط عبد الصمد — مرتل'),
   Reciter('Abdul_Basit_Mujawwad_128kbps', 'Abdul Basit — Mujawwad', 'عبد الباسط عبد الصمد — مجود'),
   Reciter('Husary_128kbps', 'Mahmoud Khalil Al-Husary', 'محمود خليل الحصري'),
-  Reciter('Husary_Mujawwad_128kbps', 'Al-Husary — Mujawwad', 'محمود خليل الحصري — مجود'),
+  Reciter('Husary_Mujawwad_64kbps', 'Al-Husary — Mujawwad', 'محمود خليل الحصري — مجود'),
   Reciter('Husary_Muallim_128kbps', 'Al-Husary — Muallim (teaching)', 'محمود خليل الحصري — المعلم'),
   Reciter('Minshawy_Murattal_128kbps', 'Al-Minshawi — Murattal', 'محمد صديق المنشاوي — مرتل'),
   Reciter('Minshawy_Mujawwad_192kbps', 'Al-Minshawi — Mujawwad', 'محمد صديق المنشاوي — مجود'),
