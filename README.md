@@ -2,7 +2,7 @@
 
 **صدقة جارية — Sadaqa Jariyah on behalf of Mohamad Koussa and Dima Ghannoum and their families.**
 
-A native SwiftUI Quran reader for macOS 14+
+A native SwiftUI Quran reader for macOS 26+
 
 ![Quran Reader HD icon](Assets/AppIcon.png)
 
