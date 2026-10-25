@@ -114,6 +114,12 @@ jobs:
           flutter build apk --release --build-name=${{ needs.version.outputs.semver }} --build-number=${{ needs.version.outputs.build }}
           mkdir -p ../dist
           cp build/app/outputs/flutter-apk/app-release.apk "../dist/QuranReaderHD-${{ needs.version.outputs.version }}.apk"
+      - name: Build app bundle for Google Play
+        # Play only takes bundles signed with the app's upload key, so there's none without it.
+        if: hashFiles('flutter_app/android/key.properties') != ''
+        run: |
+          flutter build appbundle --release --build-name=${{ needs.version.outputs.semver }} --build-number=${{ needs.version.outputs.build }}
+          cp build/app/outputs/bundle/release/app-release.aab "../dist/QuranReaderHD-${{ needs.version.outputs.version }}.aab"
       - uses: actions/upload-artifact@v4
         with:
           name: android

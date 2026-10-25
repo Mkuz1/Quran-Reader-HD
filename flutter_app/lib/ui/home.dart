@@ -199,8 +199,8 @@ class _HomeState extends State<Home> {
           ),
         ),
         Positioned(
-          left: 10,
-          right: 10,
+          left: 10 + mq.padding.left,
+          right: 10 + mq.padding.right,
           bottom: 10 + mq.padding.bottom,
           child: overlay(
             top: false,
@@ -245,18 +245,25 @@ class _HomeState extends State<Home> {
       final reader = model.mode == ReadingMode.mushaf
           ? MushafReader(fold: vFold != null && !model.showInspector ? vFold : null, bottomInset: dockSpace)
           : const TextModeView();
-      final readerWithDock = Stack(children: [
-        Positioned.fill(child: reader),
-        if (hFold == null)
-          Positioned(
-            left: 10,
-            right: 10,
-            bottom: 10 + mq.padding.bottom,
-            child: Center(
-              child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 980), child: Dock(compact: compactBar)),
+      // Built in place so the dock keeps clear of the insets left for this side of a split layout.
+      final readerWithDock = Builder(builder: (context) {
+        final insets = MediaQuery.paddingOf(context);
+        return Stack(children: [
+          Positioned.fill(child: reader),
+          if (hFold == null)
+            Positioned(
+              left: 10 + insets.left,
+              right: 10 + insets.right,
+              bottom: 10 + insets.bottom,
+              child: Center(
+                child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 980), child: Dock(compact: compactBar)),
+              ),
             ),
-          ),
-      ]);
+        ]);
+      });
+      // Beside a panel, the reader only keeps clear of the screen edge it touches.
+      Widget inner(Widget child, {bool left = false, bool right = false}) =>
+          MediaQuery.removePadding(context: context, removeLeft: left, removeRight: right, child: child);
       void closeInspector() {
         model.showInspector = false;
         model.update(() {});
@@ -269,27 +276,33 @@ class _HomeState extends State<Home> {
           SizedBox(height: top.clamp(100, mq.size.height), child: reader),
           SizedBox(height: hFold.height),
           Expanded(
-            child: Column(children: [
-              Padding(padding: const EdgeInsets.all(8), child: Dock(compact: compactBar)),
-              if (model.showInspector) Expanded(child: AyahInspector(onClose: closeInspector)),
-            ]),
+            child: SafeArea(
+              top: false,
+              child: Column(children: [
+                Padding(padding: const EdgeInsets.all(8), child: Dock(compact: compactBar)),
+                if (model.showInspector) Expanded(child: AyahInspector(onClose: closeInspector)),
+              ]),
+            ),
           ),
         ]);
       } else if (vFold != null && model.showInspector) {
         // Unfolded: the page on one half of the hinge, its translation or tafsir on the other.
         body = Row(children: [
-          SizedBox(width: vFold.left, child: readerWithDock),
+          SizedBox(width: vFold.left, child: inner(readerWithDock, right: true)),
           SizedBox(width: vFold.width),
           Expanded(child: Material(child: SafeArea(left: false, child: AyahInspector(onClose: closeInspector)))),
         ]);
       } else if (medium) {
         body = Row(children: [
-          if (wide) SizedBox(width: 300, child: Material(child: Sidebar())),
+          if (wide) SizedBox(width: 300 + mq.padding.left, child: Material(child: SafeArea(right: false, child: Sidebar()))),
           if (wide) const VerticalDivider(width: 1),
-          Expanded(child: readerWithDock),
+          Expanded(child: inner(readerWithDock, left: wide, right: model.showInspector)),
           if (model.showInspector) ...[
             const VerticalDivider(width: 1),
-            SizedBox(width: wide ? 380 : 340, child: Material(child: AyahInspector(onClose: closeInspector))),
+            SizedBox(
+              width: (wide ? 380 : 340) + mq.padding.right,
+              child: Material(child: SafeArea(left: false, child: AyahInspector(onClose: closeInspector))),
+            ),
           ],
         ]);
       } else {
