@@ -142,8 +142,10 @@ class _MushafReaderState extends State<MushafReader> {
   Widget _spread(BuildContext context, int first, bool dual) {
     final coloured = model.theme == PageTheme.coloured;
     final side = widget.edgeToEdge ? 4.0 : 12.0;
-    final bottom = widget.edgeToEdge ? side : (coloured ? 14.0 : 22.0) + widget.bottomInset;
-    final pad = EdgeInsets.fromLTRB(side, side + 2, side, bottom);
+    // The page stays clear of system bars and camera cutouts (a navigation bar on the side in landscape).
+    final insets = MediaQuery.paddingOf(context);
+    final bottom = widget.edgeToEdge ? side + insets.bottom : (coloured ? 14.0 : 22.0) + widget.bottomInset;
+    final pad = EdgeInsets.fromLTRB(side + insets.left, side + 2 + insets.top, side + insets.right, bottom);
     if (!dual) {
       return Padding(padding: pad, child: Center(child: MushafPage(page: first, outerEdgeIsRight: true)));
     }

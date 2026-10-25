@@ -54,62 +54,68 @@ class _TextModeViewState extends State<TextModeView> {
         final theme = Theme.of(context);
         return Container(
           color: theme.brightness == Brightness.dark ? AppColors.paperDark : AppColors.paperLight,
-          child: Column(children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
-              child: Material(
-                color: theme.colorScheme.surfaceContainer,
-                borderRadius: BorderRadius.circular(24),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                  child: Wrap(
-                    alignment: WrapAlignment.center,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: 8,
-                    children: [
-                      Row(mainAxisSize: MainAxisSize.min, children: [
-                        IconButton(
-                            onPressed: sura > 1 ? () => _jump(sura - 1) : null, icon: const Icon(Icons.chevron_left)),
-                        Column(mainAxisSize: MainAxisSize.min, children: [
-                          Text(model.surahTitle(sura), style: theme.textTheme.titleSmall),
-                          if (s != null)
-                            Text(
-                              '${Localizer.shared.language == AppLanguage.arabic ? s.englishName : s.englishNameTranslation}'
-                              ' · ${tr(s.revelationType == 'Meccan' ? 'Makki' : 'Madani')} · ${tr('%d verses', [s.numberOfAyahs])}',
-                              style: theme.textTheme.bodySmall,
-                            ),
+          // Clear of a navigation bar or cutout at the side in landscape.
+          child: SafeArea(
+            top: false,
+            bottom: false,
+            child: Column(children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
+                child: Material(
+                  color: theme.colorScheme.surfaceContainer,
+                  borderRadius: BorderRadius.circular(24),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                    child: Wrap(
+                      alignment: WrapAlignment.center,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      children: [
+                        Row(mainAxisSize: MainAxisSize.min, children: [
+                          IconButton(
+                              onPressed: sura > 1 ? () => _jump(sura - 1) : null, icon: const Icon(Icons.chevron_left)),
+                          Column(mainAxisSize: MainAxisSize.min, children: [
+                            Text(model.surahTitle(sura), style: theme.textTheme.titleSmall),
+                            if (s != null)
+                              Text(
+                                '${Localizer.shared.language == AppLanguage.arabic ? s.englishName : s.englishNameTranslation}'
+                                ' · ${tr(s.revelationType == 'Meccan' ? 'Makki' : 'Madani')} · ${tr('%d verses', [s.numberOfAyahs])}',
+                                style: theme.textTheme.bodySmall,
+                              ),
+                          ]),
+                          IconButton(
+                              onPressed: sura < 114 ? () => _jump(sura + 1) : null, icon: const Icon(Icons.chevron_right)),
                         ]),
-                        IconButton(
-                            onPressed: sura < 114 ? () => _jump(sura + 1) : null, icon: const Icon(Icons.chevron_right)),
-                      ]),
-                      SegmentedButton<StudyDisplay>(
-                        segments: [
-                          for (final d in StudyDisplay.values) ButtonSegment(value: d, label: Text(tr(d.label)))
-                        ],
-                        selected: {model.studyDisplay},
-                        showSelectedIcon: false,
-                        style: const ButtonStyle(visualDensity: VisualDensity.compact),
-                        onSelectionChanged: (v) => model.update(() => model.studyDisplay = v.first),
-                      ),
-                      FilterChip(
-                        label: Text(tr('Tafsir')),
-                        selected: _showTafsir,
-                        onSelected: (v) => setState(() => _showTafsir = v),
-                      ),
-                    ],
+                        SegmentedButton<StudyDisplay>(
+                          segments: [
+                            for (final d in StudyDisplay.values) ButtonSegment(value: d, label: Text(tr(d.label)))
+                          ],
+                          selected: {model.studyDisplay},
+                          showSelectedIcon: false,
+                          style: const ButtonStyle(visualDensity: VisualDensity.compact),
+                          onSelectionChanged: (v) => model.update(() => model.studyDisplay = v.first),
+                        ),
+                        FilterChip(
+                          label: Text(tr('Tafsir')),
+                          selected: _showTafsir,
+                          onSelected: (v) => setState(() => _showTafsir = v),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-            Expanded(
-              child: ListView.builder(
-                controller: _scroll,
-                padding: const EdgeInsets.only(bottom: 140),
-                itemCount: count,
-                itemBuilder: (context, i) => _row(context, AyahKey(sura, i + 1)),
+              Expanded(
+                child: ListView.builder(
+                  controller: _scroll,
+                  // Room for the dock and the navigation bar under it.
+                  padding: EdgeInsets.only(bottom: 140 + MediaQuery.paddingOf(context).bottom),
+                  itemCount: count,
+                  itemBuilder: (context, i) => _row(context, AyahKey(sura, i + 1)),
+                ),
               ),
-            ),
-          ]),
+            ]),
+          ),
         );
       },
     );

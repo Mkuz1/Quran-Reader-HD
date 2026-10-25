@@ -59,6 +59,17 @@ void main() {
     }
   });
 
+  /// Decodes the page images for real before taking screenshots.
+  Future<void> decodePages(WidgetTester tester) async {
+    await tester.runAsync(() async {
+      for (final e in tester.elementList(find.byType(Image))) {
+        final image = (e.widget as Image).image;
+        await precacheImage(image, e);
+      }
+    });
+    await tester.pump();
+  }
+
   Future<void> pumpHome(WidgetTester tester, Size size,
       {List<ui.DisplayFeature> features = const [],
       String language = 'en',
@@ -103,14 +114,7 @@ void main() {
       await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 300)));
       await tester.pump(const Duration(milliseconds: 100));
     }
-    // Decode the page images for real before taking screenshots.
-    await tester.runAsync(() async {
-      for (final e in tester.elementList(find.byType(Image))) {
-        final image = (e.widget as Image).image;
-        await precacheImage(image, e);
-      }
-    });
-    await tester.pump();
+    await decodePages(tester);
     expect(model.status, LoadStatus.ready);
   }
 
@@ -224,6 +228,34 @@ void main() {
     model.select(const AyahKey(2, 3));
     await tester.pump();
     await shot(tester, 'desktop');
+    await finish(tester);
+  });
+
+  testWidgets('edge to edge in landscape: clear of a side navigation bar and a cutout', (tester) async {
+    await pumpHome(tester, const Size(892, 412));
+    // Android 15 draws the app behind the system bars: a camera cutout on the left, buttons on the right.
+    const insets = FakeViewPadding(left: 40, top: 24, right: 48);
+    tester.view.padding = insets;
+    tester.view.viewPadding = insets;
+    await tester.pump();
+    void expectClear(Finder f) {
+      for (final e in f.evaluate()) {
+        final r = tester.getRect(find.byWidget(e.widget));
+        expect(r.left, greaterThanOrEqualTo(40), reason: '$f');
+        expect(r.right, lessThanOrEqualTo(892 - 48), reason: '$f');
+      }
+    }
+
+    expectClear(find.byType(MushafPage));
+    expectClear(find.byType(Dock));
+    await shot(tester, 'landscape-insets');
+    model.setFullScreen(true);
+    await tester.pump();
+    await decodePages(tester);
+    expectClear(find.byType(MushafPage));
+    expect(tester.getRect(find.byType(MushafPage).first).top, greaterThanOrEqualTo(24));
+    await shot(tester, 'landscape-insets-fullscreen');
+    model.setFullScreen(false);
     await finish(tester);
   });
 
